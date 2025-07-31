@@ -100,11 +100,12 @@ citySchema.pre('save', async function(next) {
 // Compound index to ensure city names are unique within a state
 citySchema.index({ name: 1, state: 1 }, { unique: true });
 
-// Virtual for areas
-citySchema.virtual('areas', {
-    ref: 'Area',
+// Virtual for locations in this city
+citySchema.virtual('locations', {
+    ref: 'Location',
+    localField: '_id',
     foreignField: 'city',
-    localField: '_id'
+    justOne: false
 });
 
 // Add pre-find hook to populate country and state

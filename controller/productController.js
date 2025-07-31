@@ -58,70 +58,63 @@ function isValidExtension(filename, allowedExts) {
   return allowedExts.includes(ext);
 }
 
-// 🚀 OPTIMIZED VALIDATION - Single batch validation
+// 🚀 VALIDATION - All fields are optional
 const validate = [
   body("name")
+    .optional()
     .trim()
     .isLength({ min: 2 })
-    .withMessage("Name must be at least 2 characters")
-    .notEmpty()
-    .withMessage("Name is required"),
+    .withMessage("Name must be at least 2 characters"),
   body("category")
-    .notEmpty()
-    .withMessage("Category is required")
+    .optional()
     .isMongoId()
     .withMessage("Category must be a valid Mongo ID"),
   body("substructure")
-    .notEmpty()
-    .withMessage("Substructure is required")
+    .optional()
     .isMongoId()
     .withMessage("Substructure must be a valid Mongo ID"),
   body("content")
-    .notEmpty()
-    .withMessage("Content is required")
+    .optional()
     .isMongoId()
     .withMessage("Content must be a valid Mongo ID"),
   body("design")
-    .notEmpty()
-    .withMessage("Design is required")
+    .optional()
     .isMongoId()
     .withMessage("Design must be a valid Mongo ID"),
   body("subfinish")
-    .notEmpty()
-    .withMessage("Subfinish is required")
+    .optional()
     .isMongoId()
     .withMessage("Subfinish must be a valid Mongo ID"),
   body("subsuitable")
-    .notEmpty()
-    .withMessage("Subsuitable is required")
+    .optional()
     .isMongoId()
     .withMessage("Subsuitable must be a valid Mongo ID"),
   body("vendor")
-    .notEmpty()
-    .withMessage("Vendor is required")
+    .optional()
     .isMongoId()
     .withMessage("Vendor must be a valid Mongo ID"),
   body("groupcode")
-    .notEmpty()
-    .withMessage("Groupcode is required")
+    .optional()
     .isMongoId()
     .withMessage("Groupcode must be a valid Mongo ID"),
   body("color")
-    .isArray({ min: 1 })
-    .withMessage("At least one color is required"),
+    .optional()
+    .isArray()
+    .withMessage("Color must be an array"),
   body('color.*')
+    .optional()
     .isMongoId()
     .withMessage('Each color must be a valid Mongo ID'),
   body("motif")
     .optional()
     .isMongoId()
     .withMessage("Motif must be a valid Mongo ID"),
-  body("um").optional().isString(),
-  body("currency").optional().isString(),
-  body("gsm").optional().isNumeric(),
-  body("oz").optional().isNumeric(),
-  body("cm").optional().isNumeric(),
-  body("inch").optional().isNumeric(),
+  body("um").optional().isString().withMessage("UM must be a string"),
+  body("currency").optional().isString().withMessage("Currency must be a string"),
+  body("gsm").optional().isNumeric().withMessage("GSM must be a number"),
+  body("oz").optional().isNumeric().withMessage("OZ must be a number"),
+  body("cm").optional().isNumeric().withMessage("CM must be a number"),
+  body("inch").optional().isNumeric().withMessage("Inch must be a number"),
 ];
 
 const create = async (req, res) => {
@@ -219,15 +212,39 @@ const create = async (req, res) => {
       }
     }
 
-    // 🚀 BATCH VALIDATION - Check all references in parallel
+    // 🚀 BATCH VALIDATION - Check all references in parallel if provided
     const validationPromises = [
-      Category.exists({ _id: category }),
-      Substructure.exists({ _id: substructure }),
-      Content.exists({ _id: content }),
-      Design.exists({ _id: design }),
-      Subfinish.exists({ _id: subfinish }),
-      Subsuitable.exists({ _id: subsuitable }),
-      // Handle color validation
+      // Only validate category if provided
+      category ? Category.exists({ _id: category }).then(exists => 
+        exists ? { field: 'category', exists: true } : { field: 'category', exists: false }
+      ) : Promise.resolve({ field: 'category', exists: true }),
+      
+      // Only validate substructure if provided
+      substructure ? Substructure.exists({ _id: substructure }).then(exists => 
+        exists ? { field: 'substructure', exists: true } : { field: 'substructure', exists: false }
+      ) : Promise.resolve({ field: 'substructure', exists: true }),
+      
+      // Only validate content if provided
+      content ? Content.exists({ _id: content }).then(exists => 
+        exists ? { field: 'content', exists: true } : { field: 'content', exists: false }
+      ) : Promise.resolve({ field: 'content', exists: true }),
+      
+      // Only validate design if provided
+      design ? Design.exists({ _id: design }).then(exists => 
+        exists ? { field: 'design', exists: true } : { field: 'design', exists: false }
+      ) : Promise.resolve({ field: 'design', exists: true }),
+      
+      // Only validate subfinish if provided
+      subfinish ? Subfinish.exists({ _id: subfinish }).then(exists => 
+        exists ? { field: 'subfinish', exists: true } : { field: 'subfinish', exists: false }
+      ) : Promise.resolve({ field: 'subfinish', exists: true }),
+      
+      // Only validate subsuitable if provided
+      subsuitable ? Subsuitable.exists({ _id: subsuitable }).then(exists => 
+        exists ? { field: 'subsuitable', exists: true } : { field: 'subsuitable', exists: false }
+      ) : Promise.resolve({ field: 'subsuitable', exists: true }),
+      
+      // Handle color validation - colors are optional but if provided, must be valid
       (async () => {
         if (color && Array.isArray(color) && color.length > 0) {
           try {
@@ -243,40 +260,43 @@ const create = async (req, res) => {
                 }
               }
               console.error('Invalid color IDs:', invalidColors);
-              throw new Error(`The following color IDs are invalid: ${invalidColors.join(', ')}`);
+              return { field: 'color', exists: false, message: `The following color IDs are invalid: ${invalidColors.join(', ')}` };
             }
-            return true; // All colors are valid
+            return { field: 'color', exists: true }; // All colors are valid
           } catch (error) {
             console.error('Error validating colors:', error);
-            throw error;
+            return { field: 'color', exists: false, message: 'Error validating colors' };
           }
-        } else {
-          throw new Error('At least one color is required');
         }
+        return { field: 'color', exists: true }; // No colors provided is also valid
       })(),
-      Vendor.exists({ _id: vendor }),
-      Groupcode.exists({ _id: groupcode })
+      
+      // Only validate vendor if provided
+      vendor ? Vendor.exists({ _id: vendor }).then(exists => 
+        exists ? { field: 'vendor', exists: true } : { field: 'vendor', exists: false }
+      ) : Promise.resolve({ field: 'vendor', exists: true }),
+      
+      // Only validate groupcode if provided
+      groupcode ? Groupcode.exists({ _id: groupcode }).then(exists => 
+        exists ? { field: 'groupcode', exists: true } : { field: 'groupcode', exists: false }
+      ) : Promise.resolve({ field: 'groupcode', exists: true })
     ];
 
     try {
       const validationResults = await Promise.all(validationPromises);
       
-      // Map validation results to their corresponding field names for better error reporting
-      const fieldNames = [
-        'category', 'substructure', 'content', 'design', 'subfinish', 'subsuitable', 'color', 'vendor', 'groupcode'
-      ];
-      
-      const invalidRefs = validationResults.map((exists, index) => ({
-        field: fieldNames[index] || `unknown_${index}`,
-        exists: !!exists
-      })).filter(ref => !ref.exists);
+      // Filter out any invalid references
+      const invalidRefs = validationResults.filter(result => !result.exists);
 
       if (invalidRefs.length > 0) {
         console.error('Invalid references found:', invalidRefs);
-        const invalidFields = invalidRefs.map(ref => ref.field).join(', ');
+        const errorMessages = invalidRefs
+          .map(ref => ref.message || `${ref.field} not found`)
+          .join('. ');
+          
         return res.status(400).json({
           success: false,
-          message: `The following referenced entities do not exist: ${invalidFields}`,
+          message: errorMessages || 'Some references are invalid',
           invalidReferences: invalidRefs
         });
       }
@@ -299,17 +319,21 @@ const create = async (req, res) => {
       }
     }
 
-    // Fetch the category name for folder naming
-    const categoryDoc = await Category.findById(category);
-    if (!categoryDoc) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Category not found" });
+    // Handle category folder naming (optional)
+    let categoryFolder = 'products'; // Default folder if no category
+    if (category) {
+      const categoryDoc = await Category.findById(category);
+      if (!categoryDoc) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Category not found" 
+        });
+      }
+      categoryFolder = slugify(categoryDoc.name, {
+        lower: true,
+        strict: true,
+      });
     }
-    const categoryFolder = slugify(categoryDoc.name, {
-      lower: true,
-      strict: true,
-    });
 
     // Upload main image (optional)
     let img = "";

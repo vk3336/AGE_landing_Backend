@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 
-const areaSchema = new mongoose.Schema({
+const locationSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: [true, 'Area name is required'],
+        required: [true, 'Location name is required'],
         unique: true,
         trim: true,
         lowercase: true
@@ -29,6 +29,16 @@ const areaSchema = new mongoose.Schema({
     city: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'City'
+    },
+    timezone: {
+        type: String,
+        trim: true,
+        default: 'Asia/Kolkata' // Default to Indian timezone
+    },
+    language: {
+        type: String,
+        trim: true,
+        default: 'en' // Default to English
     }
 }, {
     timestamps: true,
@@ -37,7 +47,7 @@ const areaSchema = new mongoose.Schema({
 });
 
 // Handle slug and name validation before saving
-areaSchema.pre('save', async function(next) {
+locationSchema.pre('save', async function(next) {
     try {
         // Convert name to lowercase for case-insensitive comparison
         if (this.isModified('name')) {
@@ -51,7 +61,7 @@ areaSchema.pre('save', async function(next) {
             });
             
             if (existingName) {
-                const error = new Error('Area name already exists in this city');
+                const error = new Error('Location name already exists in this city');
                 error.name = 'ValidationError';
                 return next(error);
             }
@@ -101,11 +111,11 @@ areaSchema.pre('save', async function(next) {
     }
 });
 
-// Compound index to ensure area names are unique within a city
-areaSchema.index({ name: 1, city: 1 }, { unique: true });
+// Compound index to ensure location names are unique within a city
+locationSchema.index({ name: 1, city: 1 }, { unique: true });
 
 // Add pre-find hook to populate references
-areaSchema.pre(/^find/, function(next) {
+locationSchema.pre(/^find/, function(next) {
     this.populate([
         {
             path: 'country',
@@ -123,5 +133,5 @@ areaSchema.pre(/^find/, function(next) {
     next();
 });
 
-const Area = mongoose.model('Area', areaSchema);
-module.exports = Area;
+const Location = mongoose.model('Location', locationSchema);
+module.exports = Location;

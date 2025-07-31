@@ -5,6 +5,7 @@ const {
   getAllSeo,
   getSeoById,
   getSeoByProduct,
+  getSeoByLocation,
   updateSeo,
   deleteSeo,
   getPopularProducts,
@@ -33,6 +34,9 @@ router.get("/slug/:slug", getSeoBySlug);
 
 // Get SEO by product ID
 router.get("/product/:productId", getSeoByProduct);
+
+// Get SEO by location ID
+router.get("/location/:locationId", getSeoByLocation);
 
 // Get SEO by productIdentifier
 router.get("/identifier/:identifier", getSeoByProductIdentifier);

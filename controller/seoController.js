@@ -1,5 +1,6 @@
 const Seo = require("../model/Seo");
 const Product = require("../model/Product");
+const Location = require("../model/location.model");
 const mongoose = require("mongoose");
 
 // Create SEO
@@ -23,7 +24,9 @@ const createSeo = async (req, res) => {
         seoData.twitter.player_height = Number(seoData.twitter.player_height);
     }
 
-    // Check if product exists
+    // All fields are optional, including product and location
+
+    // Check if product exists if provided
     if (product) {
       const productExists = await Product.findById(product);
       if (!productExists) {
@@ -32,15 +35,33 @@ const createSeo = async (req, res) => {
           message: "Product not found",
         });
       }
-    }
-
-    // Check if SEO already exists for this product
-    if (product) {
+      
+      // Check if SEO already exists for this product
       const existingSeo = await Seo.findOne({ product });
       if (existingSeo) {
         return res.status(400).json({
           success: false,
           message: "SEO data already exists for this product",
+        });
+      }
+    }
+
+    // Check if location exists if provided
+    if (seoData.location) {
+      const locationExists = await Location.findById(seoData.location);
+      if (!locationExists) {
+        return res.status(400).json({
+          success: false,
+          message: "Location not found",
+        });
+      }
+      
+      // Check if SEO already exists for this location
+      const existingLocationSeo = await Seo.findOne({ location: seoData.location });
+      if (existingLocationSeo) {
+        return res.status(400).json({
+          success: false,
+          message: "SEO data already exists for this location",
         });
       }
     }
@@ -105,7 +126,9 @@ const getSeoById = async (req, res) => {
       });
     }
 
-    const seo = await Seo.findById(id).populate("product");
+    const seo = await Seo.findById(id)
+      .populate("product")
+      .populate("location", "name slug");
 
     if (!seo) {
       return res.status(404).json({
@@ -132,7 +155,9 @@ const getSeoById = async (req, res) => {
 const getSeoByProduct = async (req, res) => {
   try {
     const { productId } = req.params;
-    const seo = await Seo.findOne({ product: productId }).populate("product");
+    const seo = await Seo.findOne({ product: productId })
+      .populate("product")
+      .populate("location", "name slug");
 
     if (!seo) {
       return res.status(404).json({
@@ -167,7 +192,7 @@ const updateSeo = async (req, res) => {
       });
     }
 
-    let { product, ...updateData } = req.body;
+    let { product, location, ...updateData } = req.body;
 
     // Parse openGraph.images if sent as a comma-separated string
     if (
@@ -192,31 +217,61 @@ const updateSeo = async (req, res) => {
         );
     }
 
-    // Check if product exists if it's being updated
-    if (product) {
-      const productExists = await Product.findById(product);
-      if (!productExists) {
-        return res.status(400).json({
-          success: false,
-          message: "Product not found",
-        });
-      }
+    // Handle product update if provided
+    if (product !== undefined) {
+      if (product) {
+        // If product is being set to a non-null value, validate it exists
+        const productExists = await Product.findById(product);
+        if (!productExists) {
+          return res.status(400).json({
+            success: false,
+            message: "Product not found",
+          });
+        }
 
-      // Check if SEO already exists for this product (excluding current record)
-      const existingSeo = await Seo.findOne({ product, _id: { $ne: id } });
-      if (existingSeo) {
-        return res.status(400).json({
-          success: false,
-          message: "SEO data already exists for this product",
-        });
+        // Check for duplicate SEO entry for this product
+        const existingSeo = await Seo.findOne({ product, _id: { $ne: id } });
+        if (existingSeo) {
+          return res.status(400).json({
+            success: false,
+            message: "SEO data already exists for this product",
+          });
+        }
       }
+      // If product is set to null, we'll allow it (it will be removed)
+    }
+
+    // Handle location update if provided
+    if (location !== undefined) {
+      if (location) {
+        // If location is being set to a non-null value, validate it exists
+        const locationExists = await Location.findById(location);
+        if (!locationExists) {
+          return res.status(400).json({
+            success: false,
+            message: "Location not found",
+          });
+        }
+        
+        // Check for duplicate SEO entry for this location
+        const existingLocationSeo = await Seo.findOne({ location, _id: { $ne: id } });
+        if (existingLocationSeo) {
+          return res.status(400).json({
+            success: false,
+            message: "SEO data already exists for this location",
+          });
+        }
+      }
+      // If location is set to null, we'll allow it (it will be removed)
     }
 
     const updatedSeo = await Seo.findByIdAndUpdate(
       id,
-      { product, ...updateData },
+      { product, location, ...updateData },
       { new: true, runValidators: true }
-    ).populate("product");
+    )
+      .populate("product")
+      .populate("location", "name slug");
 
     if (!updatedSeo) {
       return res.status(404).json({
@@ -281,9 +336,9 @@ const deleteSeo = async (req, res) => {
 // Get popular products
 const getPopularProducts = async (req, res) => {
   try {
-    const popularProducts = await Seo.find({ popularproduct: true }).populate(
-      "product"
-    );
+    const popularProducts = await Seo.find({ popularproduct: true })
+      .populate("product")
+      .populate("location", "name slug");
     res.status(200).json({
       success: true,
       message: "Popular products retrieved successfully",
@@ -341,6 +396,41 @@ const getSeoBySlug = async (req, res) => {
       success: false,
       message: "Error getting SEO data",
       error: error.message,
+    });
+  }
+};
+
+// Get SEO by location ID
+const getSeoByLocation = async (req, res) => {
+  try {
+    const { locationId } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(locationId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid location ID format',
+      });
+    }
+
+    const seo = await Seo.find({ location: locationId })
+      .populate('product')
+      .populate('location', 'name slug');
+
+    if (!seo || seo.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No SEO data found for this location',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: seo,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
     });
   }
 };
@@ -452,6 +542,7 @@ module.exports = {
   getAllSeo,
   getSeoById,
   getSeoByProduct,
+  getSeoByLocation,
   updateSeo,
   deleteSeo,
   getPopularProducts,
