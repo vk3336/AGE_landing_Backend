@@ -28,6 +28,12 @@ const roleManagementRoutes = require("./routes/roleManagementRoutes");
 const staticSeoRoutes = require("./routes/staticSeoRoutes");
 const apiKeyMiddleware = require("./middleware/apiKeyMiddleware"); // Import the new middleware
 
+// Location routes
+const countryRoutes = require("./routes/country.routes");
+const stateRoutes = require("./routes/state.routes");
+const cityRoutes = require("./routes/city.routes");
+const areaRoutes = require("./routes/area.routes");
+
 const port = process.env.PORT || 7000;
 connectDB();
 
@@ -157,6 +163,12 @@ app.use("/api/seo", seoRoutes);
 app.use("/api/motif", motifRoutes);
 app.use("/api/roles", roleManagementRoutes);
 app.use("/api/static-seo", staticSeoRoutes);
+
+// Location routes
+app.use("/api/countries", countryRoutes);
+app.use("/api/states", stateRoutes);
+app.use("/api/cities", cityRoutes);
+app.use("/api/areas", areaRoutes);
 
 app.get("/", (req, res) => {
   res.send("Welcome to the vivek API world");
