@@ -205,20 +205,16 @@ exports.deleteLocation = async (req, res) => {
             });
         }
 
-        try {
-            // Try to check if location is being used in SEO if the model exists
-            const Seo = require('../model/seo.model');
-            const seoCount = await Seo.countDocuments({ location: id });
-
-            if (seoCount > 0) {
-                return res.status(400).json({
-                    status: 'error',
-                    message: 'Cannot delete location because it is being used by one or more SEO entries'
-                });
-            }
-        } catch (seoError) {
-            // If SEO model doesn't exist or there's an error, log it but continue with deletion
-            console.log('SEO model not found, skipping reference check:', seoError.message);
+        // Check if location is being used in SEO entries
+        const Seo = require('../model/Seo');
+        const seoUsingLocation = await Seo.findOne({ location: id });
+        
+        if (seoUsingLocation) { 
+            console.log(`Location ${id} is being used in SEO entry:`, seoUsingLocation._id);
+            return res.status(400).json({
+                status: 'error',
+                message: `Cannot delete location because it is being used by one or more SEO entries (e.g., ${seoUsingLocation._id})`
+            });
         }
 
         // Proceed with deletion
