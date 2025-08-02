@@ -149,8 +149,8 @@ exports.deleteCountry = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const country = await Country.findByIdAndDelete(id);
-
+        // First check if country exists
+        const country = await Country.findById(id);
         if (!country) {
             return res.status(404).json({
                 status: 'error',
@@ -158,14 +158,37 @@ exports.deleteCountry = async (req, res) => {
             });
         }
 
-        res.status(204).json({
+        // Check if country is being used in states, cities, or locations
+        const State = require('../model/state.model');
+        const City = require('../model/city.model');
+        const Location = require('../model/location.model');
+
+        const [stateCount, cityCount, locationCount] = await Promise.all([
+            State.countDocuments({ country: id }),
+            City.countDocuments({ country: id }),
+            Location.countDocuments({ country: id })
+        ]);
+
+        if (stateCount > 0 || cityCount > 0 || locationCount > 0) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Cannot delete country because it is being used by other records'
+            });
+        }
+
+        // If no references, proceed with deletion
+        await Country.findByIdAndDelete(id);
+
+        res.status(200).json({
             status: 'success',
+            message: 'Country deleted successfully',
             data: null
         });
     } catch (error) {
-        res.status(400).json({
+        console.error('Error deleting country:', error);
+        res.status(500).json({
             status: 'error',
-            message: error.message
+            message: 'An error occurred while deleting the country'
         });
     }
 };

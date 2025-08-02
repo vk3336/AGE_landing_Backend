@@ -155,8 +155,8 @@ exports.deleteState = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const state = await State.findByIdAndDelete(id);
-
+        // First check if state exists
+        const state = await State.findById(id);
         if (!state) {
             return res.status(404).json({
                 status: 'error',
@@ -164,14 +164,35 @@ exports.deleteState = async (req, res) => {
             });
         }
 
-        res.status(204).json({
+        // Check if state is being used in cities or locations
+        const City = require('../model/city.model');
+        const Location = require('../model/location.model');
+
+        const [cityCount, locationCount] = await Promise.all([
+            City.countDocuments({ state: id }),
+            Location.countDocuments({ state: id })
+        ]);
+
+        if (cityCount > 0 || locationCount > 0) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Cannot delete state because it is being used by other records'
+            });
+        }
+
+        // If no references, proceed with deletion
+        await State.findByIdAndDelete(id);
+
+        res.status(200).json({
             status: 'success',
+            message: 'State deleted successfully',
             data: null
         });
     } catch (error) {
-        res.status(400).json({
+        console.error('Error deleting state:', error);
+        res.status(500).json({
             status: 'error',
-            message: error.message
+            message: 'An error occurred while deleting the state'
         });
     }
 };

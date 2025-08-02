@@ -155,8 +155,8 @@ exports.deleteCity = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const city = await City.findByIdAndDelete(id);
-
+        // First check if city exists
+        const city = await City.findById(id);
         if (!city) {
             return res.status(404).json({
                 status: 'error',
@@ -164,14 +164,30 @@ exports.deleteCity = async (req, res) => {
             });
         }
 
-        res.status(204).json({
+        // Check if city is being used in locations
+        const Location = require('../model/location.model');
+        const locationCount = await Location.countDocuments({ city: id });
+
+        if (locationCount > 0) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Cannot delete city because it is being used by one or more locations'
+            });
+        }
+
+        // If no references, proceed with deletion
+        await City.findByIdAndDelete(id);
+
+        res.status(200).json({
             status: 'success',
+            message: 'City deleted successfully',
             data: null
         });
     } catch (error) {
-        res.status(400).json({
+        console.error('Error deleting city:', error);
+        res.status(500).json({
             status: 'error',
-            message: error.message
+            message: 'An error occurred while deleting the city'
         });
     }
 };

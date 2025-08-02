@@ -30,21 +30,52 @@ exports.createLocation = async (req, res) => {
     }
 };
 
-// Get all locations
+// Get all locations with pagination
 exports.getAllLocations = async (req, res) => {
     try {
+        // Pagination
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const skip = (page - 1) * limit;
+
+        // Filtering
         const filter = {};
         if (req.query.city) filter.city = req.query.city;
         if (req.query.state) filter.state = req.query.state;
         if (req.query.country) filter.country = req.query.country;
+        if (req.query.search) {
+            filter.$or = [
+                { name: { $regex: req.query.search, $options: 'i' } },
+                { pincode: { $regex: req.query.search, $options: 'i' } }
+            ];
+        }
         
-        const locations = await Location.find(filter).sort('name');
+        // Get total count for pagination
+        const total = await Location.countDocuments(filter);
+        
+        // Get paginated results
+        const locations = await Location.find(filter)
+            .sort('name')
+            .skip(skip)
+            .limit(limit)
+            .populate('country', 'name')
+            .populate('state', 'name')
+            .populate('city', 'name');
+
+        // Calculate total pages
+        const totalPages = Math.ceil(total / limit);
 
         res.status(200).json({
             status: 'success',
             results: locations.length,
             data: {
-                locations
+                locations,
+                pagination: {
+                    total,
+                    totalPages,
+                    currentPage: page,
+                    limit
+                }
             }
         });
     } catch (error) {
@@ -165,8 +196,8 @@ exports.deleteLocation = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const location = await Location.findByIdAndDelete(id);
-
+        // First check if location exists
+        const location = await Location.findById(id);
         if (!location) {
             return res.status(404).json({
                 status: 'error',
@@ -174,14 +205,35 @@ exports.deleteLocation = async (req, res) => {
             });
         }
 
-        res.status(204).json({
+        try {
+            // Try to check if location is being used in SEO if the model exists
+            const Seo = require('../model/seo.model');
+            const seoCount = await Seo.countDocuments({ location: id });
+
+            if (seoCount > 0) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Cannot delete location because it is being used by one or more SEO entries'
+                });
+            }
+        } catch (seoError) {
+            // If SEO model doesn't exist or there's an error, log it but continue with deletion
+            console.log('SEO model not found, skipping reference check:', seoError.message);
+        }
+
+        // Proceed with deletion
+        await Location.findByIdAndDelete(id);
+
+        res.status(200).json({
             status: 'success',
+            message: 'Location deleted successfully',
             data: null
         });
     } catch (error) {
-        res.status(400).json({
+        console.error('Error deleting location:', error);
+        res.status(500).json({
             status: 'error',
-            message: error.message
+            message: error.message || 'An error occurred while deleting the location'
         });
     }
 };
