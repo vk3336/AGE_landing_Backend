@@ -26,22 +26,23 @@ const createSeo = async (req, res) => {
 
     // All fields are optional, including product and location
 
-    // Check if product exists if provided
+    // Check if product exists and prevent duplicates
     if (product) {
+      // Check if product exists in database
       const productExists = await Product.findById(product);
       if (!productExists) {
         return res.status(400).json({
           success: false,
-          message: "Product not found",
+          message: "Product not found in the database",
         });
       }
       
-      // Check if SEO already exists for this product
+      // Check if SEO already exists for this product (prevent duplicates)
       const existingSeo = await Seo.findOne({ product });
       if (existingSeo) {
         return res.status(400).json({
           success: false,
-          message: "SEO data already exists for this product",
+          message: "SEO data already exists for this product. Each product can only have one SEO entry.",
         });
       }
     }
@@ -52,18 +53,11 @@ const createSeo = async (req, res) => {
       if (!locationExists) {
         return res.status(400).json({
           success: false,
-          message: "Location not found",
+          message: "Location not found in the database",
         });
       }
-      
-      // Check if SEO already exists for this location
-      const existingLocationSeo = await Seo.findOne({ location: seoData.location });
-      if (existingLocationSeo) {
-        return res.status(400).json({
-          success: false,
-          message: "SEO data already exists for this location",
-        });
-      }
+      // Allow multiple SEO entries with the same location
+      // No duplicate check for locations
     }
 
     const seo = new Seo({
