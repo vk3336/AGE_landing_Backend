@@ -36,13 +36,14 @@ const createSeo = async (req, res) => {
           message: "Product not found in the database",
         });
       }
-      
+
       // Check if SEO already exists for this product (prevent duplicates)
       const existingSeo = await Seo.findOne({ product });
       if (existingSeo) {
         return res.status(400).json({
           success: false,
-          message: "SEO data already exists for this product. Each product can only have one SEO entry.",
+          message:
+            "SEO data already exists for this product. Each product can only have one SEO entry.",
         });
       }
     }
@@ -86,12 +87,12 @@ const createSeo = async (req, res) => {
 const getAllSeo = async (req, res) => {
   try {
     // 🚀 PERFORMANCE OPTIMIZATIONS - NO LIMITS, ALL DATA
-    
+
     // 🚀 GET ALL SEO DATA - NO PAGINATION LIMITS
-    const seoList = await Seo.find()
-      .populate("product", "name img category") // Select only needed fields
-      .lean() // Convert to plain objects for speed
-      .exec();
+    const seoList = await Seo.find();
+    // .populate("product", "name img category") // Select only needed fields
+    // .lean() // Convert to plain objects for speed
+    // .exec();
 
     res.status(200).json({
       success: true,
@@ -246,9 +247,12 @@ const updateSeo = async (req, res) => {
             message: "Location not found",
           });
         }
-        
+
         // Check for duplicate SEO entry for this location
-        const existingLocationSeo = await Seo.findOne({ location, _id: { $ne: id } });
+        const existingLocationSeo = await Seo.findOne({
+          location,
+          _id: { $ne: id },
+        });
         if (existingLocationSeo) {
           return res.status(400).json({
             success: false,
@@ -398,22 +402,22 @@ const getSeoBySlug = async (req, res) => {
 const getSeoByLocation = async (req, res) => {
   try {
     const { locationId } = req.params;
-    
+
     if (!mongoose.Types.ObjectId.isValid(locationId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid location ID format',
+        message: "Invalid location ID format",
       });
     }
 
     const seo = await Seo.find({ location: locationId })
-      .populate('product')
-      .populate('location', 'name slug');
+      .populate("product")
+      .populate("location", "name slug");
 
     if (!seo || seo.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No SEO data found for this location',
+        message: "No SEO data found for this location",
       });
     }
 
