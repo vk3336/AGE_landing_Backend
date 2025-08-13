@@ -337,9 +337,11 @@ const create = async (req, res) => {
 
     // Upload main image (optional)
     let img = "";
-    if (req.files && req.files.file && req.files.file[0]) {
+    // Accept both 'file' and 'img' as main image fields
+    const mainImageFile = (req.files && req.files.file && req.files.file[0]) || (req.files && req.files.img && req.files.img[0]);
+    if (mainImageFile) {
       const uploadResult = await cloudinaryServices.cloudinaryImageUpload(
-        req.files.file[0].buffer,
+        mainImageFile.buffer,
         name,
         categoryFolder
       );
@@ -604,32 +606,25 @@ const update = async (req, res) => {
       }
     }
 
-    // Handle video
-    if (req.files && req.files.video && req.files.video[0]) {
-      const videoResult = await cloudinaryServices.cloudinaryImageUpload(
-        req.files.video[0].buffer,
-        (req.body.name || oldProduct.name || "product") + "-video",
-        categoryFolder,
-        false,
-        "video"
-      );
-      if (videoResult && videoResult.eager && videoResult.eager.length > 0) {
-        if (oldProduct.video) {
-          const publicId = oldProduct.video.split("/").pop().split(".")[0];
-          cloudinaryServices
-            .cloudinaryImageDelete(publicId)
-            .catch(console.error);
+        // Accept both 'file' and 'img' as main image fields
+        const mainImageFile = (req.files && req.files.file && req.files.file[0]) || (req.files && req.files.img && req.files.img[0]);
+        if (mainImageFile) {
+          const uploadResult = await cloudinaryServices.cloudinaryImageUpload(
+            mainImageFile.buffer,
+            req.body.name || oldProduct.name || "product",
+            categoryFolder
+          );
+          if (uploadResult && uploadResult.secure_url) {
+            // Delete old image from Cloudinary
+            if (oldProduct.img) {
+              const publicId = oldProduct.img.split("/").pop().split(".")[0];
+              cloudinaryServices
+                .cloudinaryImageDelete(publicId)
+                .catch(console.error);
+            }
+            updateData.img = uploadResult.secure_url;
+          }
         }
-        updateData.video =
-          videoResult.eager[0].secure_url || videoResult.secure_url;
-        updateData.videoThumbnail =
-          videoResult.eager[1] && videoResult.eager[1].secure_url
-            ? videoResult.eager[1].secure_url
-            : "";
-      } else if (videoResult && videoResult.secure_url) {
-        updateData.video = videoResult.secure_url;
-      }
-    }
 
     // 🚀 BATCH VALIDATION if references are being updated
     if (
