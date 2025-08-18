@@ -514,6 +514,16 @@ const viewById = async (req, res) => {
   }
 };
 
+// Helper function to validate uploaded files
+const validateFile = (fileObj, allowedExts, maxSize, label) => {
+  if (fileObj.size > maxSize) {
+    throw new Error(`${label} file size exceeds limit (${Math.round(maxSize/(1024*1024))}MB)`);
+  }
+  if (!isValidExtension(fileObj.originalname, allowedExts)) {
+    throw new Error(`Invalid ${label} extension. Allowed: ${allowedExts.join(', ')}`);
+  }
+};
+
 const update = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -522,6 +532,17 @@ const update = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = { ...req.body };
+    
+    // Normalize req.files (multer.any() => array) into { [fieldname]: File[] }
+    if (Array.isArray(req.files)) {
+      const filesObj = {};
+      for (const file of req.files) {
+        if (!filesObj[file.fieldname]) filesObj[file.fieldname] = [];
+        filesObj[file.fieldname].push(file);
+      }
+      req.files = filesObj;
+    }
+
     if (req.body.quantity !== undefined && req.body.quantity !== "") {
       const parsed = Number(req.body.quantity);
       if (!isNaN(parsed)) {
@@ -553,78 +574,88 @@ const update = async (req, res) => {
       }
     }
 
-    // Handle main image (img)
-    if (req.files && req.files.file && req.files.file[0]) {
-      const uploadResult = await cloudinaryServices.cloudinaryImageUpload(
-        req.files.file[0].buffer,
-        req.body.name || oldProduct.name || "product",
-        categoryFolder
-      );
-      if (uploadResult && uploadResult.secure_url) {
-        // Delete old image from Cloudinary
-        if (oldProduct.img) {
-          const publicId = oldProduct.img.split("/").pop().split(".")[0];
-          cloudinaryServices
-            .cloudinaryImageDelete(publicId)
-            .catch(console.error);
-        }
-        updateData.img = uploadResult.secure_url;
-      }
-    }
-    // Handle image1
-    if (req.files && req.files.image1 && req.files.image1[0]) {
-      const upload1 = await cloudinaryServices.cloudinaryImageUpload(
-        req.files.image1[0].buffer,
-        (req.body.name || oldProduct.name || "product") + "-image1",
-        categoryFolder
-      );
-      if (upload1 && upload1.secure_url) {
-        if (oldProduct.image1) {
-          const publicId = oldProduct.image1.split("/").pop().split(".")[0];
-          cloudinaryServices
-            .cloudinaryImageDelete(publicId)
-            .catch(console.error);
-        }
-        updateData.image1 = upload1.secure_url;
-      }
-    }
-    // Handle image2
-    if (req.files && req.files.image2 && req.files.image2[0]) {
-      const upload2 = await cloudinaryServices.cloudinaryImageUpload(
-        req.files.image2[0].buffer,
-        (req.body.name || oldProduct.name || "product") + "-image2",
-        categoryFolder
-      );
-      if (upload2 && upload2.secure_url) {
-        if (oldProduct.image2) {
-          const publicId = oldProduct.image2.split("/").pop().split(".")[0];
-          cloudinaryServices
-            .cloudinaryImageDelete(publicId)
-            .catch(console.error);
-        }
-        updateData.image2 = upload2.secure_url;
-      }
-    }
+    // ---- MEDIA UPDATES ----
+    try {
+      // Main image: accept 'file' or 'img'
+      const mainImageFile = (req.files?.file?.[0]) || (req.files?.img?.[0]);
 
-        // Accept both 'file' and 'img' as main image fields
-        const mainImageFile = (req.files && req.files.file && req.files.file[0]) || (req.files && req.files.img && req.files.img[0]);
-        if (mainImageFile) {
-          const uploadResult = await cloudinaryServices.cloudinaryImageUpload(
-            mainImageFile.buffer,
-            req.body.name || oldProduct.name || "product",
-            categoryFolder
-          );
-          if (uploadResult && uploadResult.secure_url) {
-            // Delete old image from Cloudinary
-            if (oldProduct.img) {
-              const publicId = oldProduct.img.split("/").pop().split(".")[0];
-              cloudinaryServices
-                .cloudinaryImageDelete(publicId)
-                .catch(console.error);
-            }
-            updateData.img = uploadResult.secure_url;
+      if (mainImageFile) {
+        validateFile(mainImageFile, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, 'image');
+        const uploaded = await cloudinaryServices.cloudinaryImageUpload(
+          mainImageFile.buffer,
+          req.body.name || oldProduct.name || 'product',
+          categoryFolder
+        );
+        if (uploaded?.secure_url) {
+          if (oldProduct.img) {
+            const publicId = oldProduct.img.split('/').slice(-1)[0].split('.')[0];
+            cloudinaryServices.cloudinaryImageDelete(publicId).catch(console.error);
+          }
+          updateData.img = uploaded.secure_url;
+        }
+      }
+
+      // image1
+      if (req.files?.image1?.[0]) {
+        const f = req.files.image1[0];
+        validateFile(f, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, 'image1');
+        const up = await cloudinaryServices.cloudinaryImageUpload(
+          f.buffer,
+          (req.body.name || oldProduct.name || 'product') + '-image1',
+          categoryFolder
+        );
+        if (up?.secure_url) {
+          if (oldProduct.image1) {
+            const publicId = oldProduct.image1.split('/').slice(-1)[0].split('.')[0];
+            cloudinaryServices.cloudinaryImageDelete(publicId).catch(console.error);
+          }
+          updateData.image1 = up.secure_url;
+        }
+      }
+
+      // image2
+      if (req.files?.image2?.[0]) {
+        const f = req.files.image2[0];
+        validateFile(f, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, 'image2');
+        const up = await cloudinaryServices.cloudinaryImageUpload(
+          f.buffer,
+          (req.body.name || oldProduct.name || 'product') + '-image2',
+          categoryFolder
+        );
+        if (up?.secure_url) {
+          if (oldProduct.image2) {
+            const publicId = oldProduct.image2.split('/').slice(-1)[0].split('.')[0];
+            cloudinaryServices.cloudinaryImageDelete(publicId).catch(console.error);
+          }
+          updateData.image2 = up.secure_url;
+        }
+      }
+
+      // video
+      if (req.files?.video?.[0]) {
+        const vf = req.files.video[0];
+        validateFile(vf, ALLOWED_VIDEO_EXTENSIONS, MAX_VIDEO_SIZE, 'video');
+        const vUp = await cloudinaryServices.cloudinaryImageUpload(
+          vf.buffer,
+          (req.body.name || oldProduct.name || 'product') + '-video',
+          categoryFolder,
+          false,
+          'video' // ensure resource_type 'video'
+        );
+        if (vUp) {
+          // Use eager[0] as in create(), fallback to secure_url
+          updateData.video = (vUp.eager && vUp.eager[0]?.secure_url) || vUp.secure_url || '';
+          updateData.videoThumbnail = (vUp.eager && vUp.eager[1]?.secure_url) || updateData.videoThumbnail || '';
+          // Delete old video if exists
+          if (oldProduct.video) {
+            const publicId = oldProduct.video.split('/').slice(-1)[0].split('.')[0];
+            cloudinaryServices.cloudinaryImageDelete(publicId, 'video').catch(console.error);
           }
         }
+      }
+    } catch (mediaErr) {
+      return res.status(400).json({ success: false, message: mediaErr.message });
+    }
 
     // 🚀 BATCH VALIDATION if references are being updated
     if (
