@@ -335,9 +335,9 @@ const create = async (req, res) => {
       });
     }
 
-    // Upload main image (optional)
-    let img = "";
-    // Accept both 'file' and 'img' as main image fields
+    // Handle main image - can be either a new file or an existing URL
+    let img = req.body.img || "";
+    // Check if a new file was uploaded
     const mainImageFile = (req.files && req.files.file && req.files.file[0]) || (req.files && req.files.img && req.files.img[0]);
     if (mainImageFile) {
       const uploadResult = await cloudinaryServices.cloudinaryImageUpload(
@@ -351,13 +351,13 @@ const create = async (req, res) => {
       } else if (uploadResult && uploadResult.error) {
         return res.status(500).json({
           success: false,
-          message: "Image upload failed",
+          message: "Image upload failed: " + (uploadResult.error.message || "Unknown error"),
         });
       }
     }
 
-    // Upload image1 (if present)
-    let image1Url = "";
+    // Handle image1 - can be either a new file or an existing URL
+    let image1Url = req.body.image1 || "";
     if (req.files && req.files.image1 && req.files.image1[0]) {
       const upload1 = await cloudinaryServices.cloudinaryImageUpload(
         req.files.image1[0].buffer,
@@ -365,10 +365,15 @@ const create = async (req, res) => {
         categoryFolder
       );
       console.log("[DEBUG] Cloudinary image1 upload result:", upload1);
-      if (upload1 && upload1.secure_url) image1Url = upload1.secure_url;
+      if (upload1 && upload1.secure_url) {
+        image1Url = upload1.secure_url;
+      } else if (upload1 && upload1.error) {
+        console.error("Image1 upload failed:", upload1.error);
+      }
     }
-    // Upload image2 (if present)
-    let image2Url = "";
+
+    // Handle image2 - can be either a new file or an existing URL
+    let image2Url = req.body.image2 || "";
     if (req.files && req.files.image2 && req.files.image2[0]) {
       const upload2 = await cloudinaryServices.cloudinaryImageUpload(
         req.files.image2[0].buffer,
@@ -376,12 +381,16 @@ const create = async (req, res) => {
         categoryFolder
       );
       console.log("[DEBUG] Cloudinary image2 upload result:", upload2);
-      if (upload2 && upload2.secure_url) image2Url = upload2.secure_url;
+      if (upload2 && upload2.secure_url) {
+        image2Url = upload2.secure_url;
+      } else if (upload2 && upload2.error) {
+        console.error("Image2 upload failed:", upload2.error);
+      }
     }
 
-    // Upload video (if present)
-    let videoUrl = "";
-    let videoThumbnailUrl = "";
+    // Handle video - can be either a new file or an existing URL
+    let videoUrl = req.body.video || "";
+    let videoThumbnailUrl = req.body.videoThumbnail || "";
     if (req.files && req.files.video && req.files.video[0]) {
       const videoResult = await cloudinaryServices.cloudinaryImageUpload(
         req.files.video[0].buffer,
@@ -392,14 +401,19 @@ const create = async (req, res) => {
       );
       console.log("[DEBUG] Cloudinary video upload result:", videoResult);
       // Extract AV1 video and thumbnail URLs
-      if (videoResult && videoResult.eager && videoResult.eager.length > 0) {
-        videoUrl = videoResult.eager[0].secure_url || videoResult.secure_url;
-        videoThumbnailUrl =
-          videoResult.eager[1] && videoResult.eager[1].secure_url
-            ? videoResult.eager[1].secure_url
-            : "";
-      } else if (videoResult && videoResult.secure_url) {
-        videoUrl = videoResult.secure_url;
+      if (videoResult) {
+        if (videoResult.eager && videoResult.eager.length > 0) {
+          videoUrl = videoResult.eager[0].secure_url || videoResult.secure_url || videoUrl;
+          videoThumbnailUrl =
+            videoResult.eager[1] && videoResult.eager[1].secure_url
+              ? videoResult.eager[1].secure_url
+              : videoThumbnailUrl;
+        } else if (videoResult.secure_url) {
+          videoUrl = videoResult.secure_url;
+        }
+      }
+      if (videoResult && videoResult.error) {
+        console.error("Video upload failed:", videoResult.error);
       }
     }
     const product = new Product({
