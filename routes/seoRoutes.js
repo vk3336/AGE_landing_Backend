@@ -10,6 +10,7 @@ const {
   deleteSeo,
   getPopularProducts,
   getTopRatedProducts,
+  getLandingPageProducts,
   getSeoBySlug,
   getSeoByProductIdentifier,
   getSeoBySalesPriceValue,
@@ -29,7 +30,10 @@ router.get("/popular", getPopularProducts);
 // Get top rated products
 router.get("/top-rated", getTopRatedProducts);
 
-// Get SEO by slug
+// Get landing page products
+router.get("/landing-page", getLandingPageProducts);
+
+// Get SEO by slug"
 router.get("/slug/:slug", getSeoBySlug);
 
 // Get SEO by product ID

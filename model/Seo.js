@@ -49,6 +49,10 @@ const seoSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    landingPageProduct: {
+      type: Boolean,
+      default: false,
+    },
     slug: {
       type: String,
       required: false,

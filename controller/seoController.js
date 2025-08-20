@@ -334,18 +334,32 @@ const deleteSeo = async (req, res) => {
 // Get popular products
 const getPopularProducts = async (req, res) => {
   try {
-    const popularProducts = await Seo.find({ popularproduct: true })
+    const products = await Seo.find({ popularproduct: true })
       .populate("product")
-      .populate("location", "name slug");
-    res.status(200).json({
-      success: true,
-      message: "Popular products retrieved successfully",
-      data: popularProducts,
-    });
+      .sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: products });
   } catch (error) {
+    console.error("Error fetching popular products:", error);
     res.status(500).json({
       success: false,
-      message: "Error getting popular products",
+      message: "Error fetching popular products",
+      error: error.message,
+    });
+  }
+};
+
+// Get landing page products
+const getLandingPageProducts = async (req, res) => {
+  try {
+    const products = await Seo.find({ landingPageProduct: true })
+      .populate("product")
+      .sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: products });
+  } catch (error) {
+    console.error("Error fetching landing page products:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching landing page products",
       error: error.message,
     });
   }
@@ -540,12 +554,13 @@ module.exports = {
   getAllSeo,
   getSeoById,
   getSeoByProduct,
-  getSeoByLocation,
   updateSeo,
   deleteSeo,
   getPopularProducts,
   getTopRatedProducts,
+  getLandingPageProducts,
   getSeoBySlug,
+  getSeoByLocation,
   getSeoByProductIdentifier,
   getSeoBySalesPriceValue,
   getSeoByPurchasePriceValue,
