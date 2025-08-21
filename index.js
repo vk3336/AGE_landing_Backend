@@ -38,6 +38,7 @@ const port = process.env.PORT || 7000;
 connectDB();
 
 const baseUrl = process.env.BASE_URL || "http://localhost:7000";
+const apiBasePaths = (process.env.API_BASE_PATHS || 'api').split(',').map(path => path.trim());
 
 // 🚀 ULTRA-FAST COMPRESSION
 app.use(compression());
@@ -144,34 +145,70 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
-app.use("/api/admin", adminRoutes);
-app.use("/api/category", categoryRoutes);
-app.use("/api/structure", structureRoutes);
-app.use("/api/content", contentRoutes);
-app.use("/api/design", designRoutes);
-app.use("/api/finish", finishRoutes);
-app.use("/api/suitablefor", suitableforRoutes);
-app.use("/api/vendor", vendorRoutes);
-app.use("/api/groupcode", groupcodeRoutes);
-app.use("/api/color", colorRoutes);
-app.use("/api/substructure", substructureRoutes);
-app.use("/api/subfinish", subfinishRoutes);
-app.use("/api/subsuitable", subsuitableRoutes);
-app.use("/api/product", productRoutes);
-app.use("/api/seo", seoRoutes);
-app.use("/api/motif", motifRoutes);
-app.use("/api/roles", roleManagementRoutes);
-app.use("/api/static-seo", staticSeoRoutes);
+// Function to register routes for a specific base path
+const registerRoutes = (basePath) => {
+  const apiPath = `/${basePath}`;
+  
+  // Main routes
+  app.use(`${apiPath}/admin`, adminRoutes);
+  app.use(`${apiPath}/category`, categoryRoutes);
+  app.use(`${apiPath}/structure`, structureRoutes);
+  app.use(`${apiPath}/content`, contentRoutes);
+  app.use(`${apiPath}/design`, designRoutes);
+  app.use(`${apiPath}/finish`, finishRoutes);
+  app.use(`${apiPath}/suitablefor`, suitableforRoutes);
+  app.use(`${apiPath}/vendor`, vendorRoutes);
+  app.use(`${apiPath}/groupcode`, groupcodeRoutes);
+  app.use(`${apiPath}/color`, colorRoutes);
+  app.use(`${apiPath}/substructure`, substructureRoutes);
+  app.use(`${apiPath}/subfinish`, subfinishRoutes);
+  app.use(`${apiPath}/subsuitable`, subsuitableRoutes);
+  app.use(`${apiPath}/product`, productRoutes);
+  app.use(`${apiPath}/seo`, seoRoutes);
+  app.use(`${apiPath}/motif`, motifRoutes);
+  app.use(`${apiPath}/roles`, roleManagementRoutes);
+  app.use(`${apiPath}/static-seo`, staticSeoRoutes);
 
-// Location routes
-app.use("/api/countries", countryRoutes);
-app.use("/api/states", stateRoutes);
-app.use("/api/cities", cityRoutes);
-app.use("/api/locations", locationRoutes);
+  // Location routes
+  app.use(`${apiPath}/countries`, countryRoutes);
+  app.use(`${apiPath}/states`, stateRoutes);
+  app.use(`${apiPath}/cities`, cityRoutes);
+  app.use(`${apiPath}/locations`, locationRoutes);
+};
+
+// Register routes for all base paths
+apiBasePaths.forEach(basePath => {
+  if (basePath) { // Skip empty paths
+    console.log(`Registering API routes for path: /${basePath}`);
+    registerRoutes(basePath);
+  }
+});
 
 app.get("/", (req, res) => {
-  res.send("Welcome to the vivek API world");
+  const endpoints = [];
+  
+  // Add sample endpoints for each base path
+  apiBasePaths.forEach(basePath => {
+    if (basePath) {
+      const apiPath = `/${basePath}`;
+      endpoints.push({
+        basePath: apiPath,
+        endpoints: [
+          `${apiPath}/admin`,
+          `${apiPath}/category`,
+          `${apiPath}/structure`,
+          `${apiPath}/content`,
+          // Add other endpoints as needed
+        ]
+      });
+    }
+  });
+
+  res.json({
+    message: "Welcome to the API",
+    availableBasePaths: apiBasePaths.map(p => `/${p}`),
+    endpoints: endpoints
+  });
 });
 
 app.use((req, res) => {

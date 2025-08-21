@@ -16,6 +16,7 @@ const {
   getSeoBySalesPriceValue,
   getSeoByPurchasePriceValue,
   getSeoByIdNoPopulate,
+  getShopyProducts,
 } = require("../controller/seoController");
 
 // Create SEO
@@ -32,6 +33,9 @@ router.get("/top-rated", getTopRatedProducts);
 
 // Get landing page products
 router.get("/landing-page", getLandingPageProducts);
+
+// Get shopy products
+router.get("/shopy-products", getShopyProducts);
 
 // Get SEO by slug"
 router.get("/slug/:slug", getSeoBySlug);

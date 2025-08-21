@@ -365,6 +365,38 @@ const getLandingPageProducts = async (req, res) => {
   }
 };
 
+// Get shopy products
+const getShopyProducts = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      Seo.find({ shopyProduct: true })
+        .populate('product', 'name img')
+        .populate('location', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Seo.countDocuments({ shopyProduct: true })
+    ]);
+
+    res.json({
+      success: true,
+      count: products.length,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      data: products
+    });
+  } catch (error) {
+    console.error('Error fetching shopy products:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 // Get top rated products
 const getTopRatedProducts = async (req, res) => {
   try {
@@ -565,4 +597,5 @@ module.exports = {
   getSeoBySalesPriceValue,
   getSeoByPurchasePriceValue,
   getSeoByIdNoPopulate,
+  getShopyProducts,
 };
