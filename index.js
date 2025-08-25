@@ -26,6 +26,7 @@ const seoRoutes = require("./routes/seoRoutes");
 const motifRoutes = require("./routes/motifRoutes");
 const roleManagementRoutes = require("./routes/roleManagementRoutes");
 const staticSeoRoutes = require("./routes/staticSeoRoutes");
+const userRoutes = require("./routes/userRoutes");
 const apiKeyMiddleware = require("./middleware/apiKeyMiddleware"); // Import the new middleware
 
 // Location routes
@@ -38,7 +39,9 @@ const port = process.env.PORT || 7000;
 connectDB();
 
 const baseUrl = process.env.BASE_URL || "http://localhost:7000";
-const apiBasePaths = (process.env.API_BASE_PATHS || 'api').split(',').map(path => path.trim());
+const apiBasePaths = (process.env.API_BASE_PATHS || "api")
+  .split(",")
+  .map((path) => path.trim());
 
 // 🚀 ULTRA-FAST COMPRESSION
 app.use(compression());
@@ -55,7 +58,9 @@ app.use(limiter);
 
 // 🚀 ULTRA-FAST MIDDLEWARE OPTIMIZATIONS
 // Support multiple frontend URLs
-const allowedOrigins = (process.env.FRONTEND_URLS || "http://localhost:3000").split(",");
+const allowedOrigins = (
+  process.env.FRONTEND_URLS || "http://localhost:3000"
+).split(",");
 
 app.use(
   cors({
@@ -124,7 +129,7 @@ const requiredEnv = [
   "MONGODB_URI",
   "EMAIL_USER",
   "EMAIL_PASS",
-  "API_SECRET_KEY"
+  "API_SECRET_KEY",
 ];
 requiredEnv.forEach((key) => {
   if (!process.env[key]) {
@@ -148,7 +153,7 @@ app.use((req, res, next) => {
 // Function to register routes for a specific base path
 const registerRoutes = (basePath) => {
   const apiPath = `/${basePath}`;
-  
+
   // Main routes
   app.use(`${apiPath}/admin`, adminRoutes);
   app.use(`${apiPath}/category`, categoryRoutes);
@@ -168,7 +173,7 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/motif`, motifRoutes);
   app.use(`${apiPath}/roles`, roleManagementRoutes);
   app.use(`${apiPath}/static-seo`, staticSeoRoutes);
-
+  app.use(`${apiPath}/users`, userRoutes);
   // Location routes
   app.use(`${apiPath}/countries`, countryRoutes);
   app.use(`${apiPath}/states`, stateRoutes);
@@ -177,8 +182,9 @@ const registerRoutes = (basePath) => {
 };
 
 // Register routes for all base paths
-apiBasePaths.forEach(basePath => {
-  if (basePath) { // Skip empty paths
+apiBasePaths.forEach((basePath) => {
+  if (basePath) {
+    // Skip empty paths
     console.log(`Registering API routes for path: /${basePath}`);
     registerRoutes(basePath);
   }
@@ -186,9 +192,9 @@ apiBasePaths.forEach(basePath => {
 
 app.get("/", (req, res) => {
   const endpoints = [];
-  
+
   // Add sample endpoints for each base path
-  apiBasePaths.forEach(basePath => {
+  apiBasePaths.forEach((basePath) => {
     if (basePath) {
       const apiPath = `/${basePath}`;
       endpoints.push({
@@ -199,15 +205,15 @@ app.get("/", (req, res) => {
           `${apiPath}/structure`,
           `${apiPath}/content`,
           // Add other endpoints as needed
-        ]
+        ],
       });
     }
   });
 
   res.json({
     message: "Welcome to the API",
-    availableBasePaths: apiBasePaths.map(p => `/${p}`),
-    endpoints: endpoints
+    availableBasePaths: apiBasePaths.map((p) => `/${p}`),
+    endpoints: endpoints,
   });
 });
 
