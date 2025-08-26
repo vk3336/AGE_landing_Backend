@@ -247,18 +247,7 @@ const updateSeo = async (req, res) => {
             message: "Location not found",
           });
         }
-
-        // Check for duplicate SEO entry for this location
-        const existingLocationSeo = await Seo.findOne({
-          location,
-          _id: { $ne: id },
-        });
-        if (existingLocationSeo) {
-          return res.status(400).json({
-            success: false,
-            message: "SEO data already exists for this location",
-          });
-        }
+        // Removed duplicate location check to allow multiple products with same location
       }
       // If location is set to null, we'll allow it (it will be removed)
     }
