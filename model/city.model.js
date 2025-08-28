@@ -14,10 +14,6 @@ const citySchema = new mongoose.Schema({
         unique: true,
         trim: true
     },
-    pincode: {
-        type: String,
-        trim: true
-    },
     country: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Country'

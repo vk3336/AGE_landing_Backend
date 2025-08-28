@@ -3,11 +3,10 @@ const City = require('../model/city.model');
 // Create a new city
 exports.createCity = async (req, res) => {
     try {
-        const { name, pincode, country, state, slug } = req.body;
+        const { name, country, state, slug } = req.body;
         
         const city = await City.create({
             name,
-            pincode,
             country,
             state,
             ...(slug && { slug }) // Include slug if provided
