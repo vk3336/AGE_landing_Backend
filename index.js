@@ -34,9 +34,17 @@ const countryRoutes = require("./routes/country.routes");
 const stateRoutes = require("./routes/state.routes");
 const cityRoutes = require("./routes/city.routes");
 const locationRoutes = require("./routes/location.routes");
+const contactRoutes = require("./routes/contactRoutes");
 
 const port = process.env.PORT || 7000;
-connectDB();
+
+// Enhanced DB connection with logging
+connectDB().then(() => {
+  console.log('MongoDB connected successfully');
+}).catch(err => {
+  console.error('MongoDB connection error:', err);
+  process.exit(1);
+});
 
 const baseUrl = process.env.BASE_URL || "http://localhost:7000";
 const apiBasePaths = (process.env.API_BASE_PATHS || "api")
@@ -179,6 +187,7 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/states`, stateRoutes);
   app.use(`${apiPath}/cities`, cityRoutes);
   app.use(`${apiPath}/locations`, locationRoutes);
+  app.use(`${apiPath}/contacts`, contactRoutes);
 };
 
 // Register routes for all base paths
