@@ -17,8 +17,8 @@ const seoSchema = new mongoose.Schema(
     },
     location: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Location',
-      required: false
+      ref: "Location",
+      required: false,
     },
     // Keeping locationCode for backward compatibility
     locationCode: {
@@ -119,6 +119,11 @@ const seoSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
+    productlocationtitle: { type: String },
+    productlocationtagline: { type: String },
+    productlocationdescription1: { type: String },
+    productlocationdescription2: { type: String },
+
     keywords: {
       type: String,
       required: false,
@@ -224,27 +229,93 @@ const seoSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
-    // --- New Meta Tag Fields ---
-    openGraph: {
-      images: [{ type: String, trim: true }],
-      video: {
-        url: { type: String, trim: true },
-        secure_url: { type: String, trim: true },
-        type: { type: String, trim: true },
-        width: { type: Number },
-        height: { type: Number },
-      },
+    // --- Open Graph Fields ---
+    ogImage: {
+      type: String,
+      required: false,
+      trim: true,
     },
-    twitter: {
-      image: { type: String, trim: true },
-      player: { type: String, trim: true },
-      player_width: { type: Number },
-      player_height: { type: Number },
+    ogVideoUrl: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    ogVideoSecureUrl: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    ogVideoType: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    ogVideoWidth: {
+      type: Number,
+      required: false,
+    },
+    ogVideoHeight: {
+      type: Number,
+      required: false,
+    },
+
+    // --- Twitter Fields ---
+    twitterImage: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    twitterPlayer: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    twitterPlayerWidth: {
+      type: Number,
+      required: false,
+    },
+    twitterPlayerHeight: {
+      type: Number,
+      required: false,
     },
     VideoJsonLd: { type: String, trim: true },
+
     LogoJsonLd: { type: String, trim: true },
+    LogoJsonLdcontext: { type: String, trim: true },
+    LogoJsonLdtype: { type: String, trim: true },
+    logoJsonLdurl: { type: String, trim: true },
+    logoJsonLdwidth: { type: String, trim: true },
+    logoJsonLdheight: { type: String, trim: true },
+
     BreadcrumbJsonLd: { type: String, trim: true },
+    BreadcrumbJsonLdtype: { type: String, trim: true },
+    BreadcrumbJsonLdcontext: { type: String, trim: true },
+    BreadcrumbJsonLdname: { type: String, trim: true },
+    BreadcrumbJsonLditemListElement: { type: String, trim: true },
+    BreadcrumbJsonLditemListElementtype: { type: String, trim: true },
+    BreadcrumbJsonLditemListElementitem: { type: String, trim: true },
+    BreadcrumbJsonLditemListElementname: { type: String, trim: true },
+    BreadcrumbJsonLditemListElementposition: { type: String, trim: true },
+
     LocalBusinessJsonLd: { type: String, trim: true },
+    LocalBusinessJsonLdtype: { type: String, trim: true },
+    LocalBusinessJsonLdcontext: { type: String, trim: true },
+    LocalBusinessJsonLdname: { type: String, trim: true },
+    LocalBusinessJsonLdtelephone: { type: String, trim: true },
+    LocalBusinessJsonLdareaserved: { type: String, trim: true },
+
+    LocalBusinessJsonLdaddress: { type: String, trim: true },
+    LocalBusinessJsonLdaddresstype: { type: String, trim: true },
+    LocalBusinessJsonLdaddressstreetAddress: { type: String, trim: true },
+    LocalBusinessJsonLdaddressaddressLocality: { type: String, trim: true },
+    LocalBusinessJsonLdaddressaddressRegion: { type: String, trim: true },
+    LocalBusinessJsonLdaddresspostalCode: { type: String, trim: true },
+    LocalBusinessJsonLdaddressaddressCountry: { type: String, trim: true },
+
+    LocalBusinessJsonLdgeo: { type: String, trim: true },
+    LocalBusinessJsonLdgeotype: { type: String, trim: true },
+    LocalBusinessJsonLdgeolatitude: { type: String, trim: true },
+    LocalBusinessJsonLdgeolongitude: { type: String, trim: true },
   },
   { timestamps: true }
 );
@@ -263,7 +334,7 @@ seoSchema.index({ sku: 1 });
 seoSchema.index({ productIdentifier: 1 });
 
 // Handle slug validation and generation before saving
-seoSchema.pre('save', async function(next) {
+seoSchema.pre("save", async function (next) {
   try {
     // If slug is provided, clean and validate it
     if (this.slug) {
@@ -271,27 +342,27 @@ seoSchema.pre('save', async function(next) {
       this.slug = this.slug
         .toString()
         .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '') // Remove all non-alphanumeric except spaces and hyphens
-        .replace(/\s+/g, '-')         // Replace spaces with -
-        .replace(/-+/g, '-')          // Replace multiple - with single -
-        .replace(/^-+/, '')           // Trim - from start of text
-        .replace(/-+$/, '');          // Trim - from end of text
-      
+        .replace(/[^a-z0-9\s-]/g, "") // Remove all non-alphanumeric except spaces and hyphens
+        .replace(/\s+/g, "-") // Replace spaces with -
+        .replace(/-+/g, "-") // Replace multiple - with single -
+        .replace(/^-+/, "") // Trim - from start of text
+        .replace(/-+$/, ""); // Trim - from end of text
+
       // Check if slug already exists
-      const existingSlug = await this.constructor.findOne({ 
+      const existingSlug = await this.constructor.findOne({
         slug: this.slug,
-        _id: { $ne: this._id }
+        _id: { $ne: this._id },
       });
-      
+
       if (existingSlug) {
         // If slug exists, append a counter
         let count = 1;
         let baseSlug = this.slug;
         while (true) {
           const newSlug = `${baseSlug}-${count++}`;
-          const slugExists = await this.constructor.findOne({ 
+          const slugExists = await this.constructor.findOne({
             slug: newSlug,
-            _id: { $ne: this._id }
+            _id: { $ne: this._id },
           });
           if (!slugExists) {
             this.slug = newSlug;
@@ -299,49 +370,52 @@ seoSchema.pre('save', async function(next) {
           }
         }
       }
-    } 
+    }
     // Generate slug from product name if no slug provided and product exists
     else if (this.product) {
       // Populate product name if not already populated
       let productName = this.product;
-      if (typeof this.product === 'object' && this.product.name) {
+      if (typeof this.product === "object" && this.product.name) {
         productName = this.product.name;
       } else if (mongoose.Types.ObjectId.isValid(this.product)) {
-        const product = await mongoose.model('Product').findById(this.product).select('name');
+        const product = await mongoose
+          .model("Product")
+          .findById(this.product)
+          .select("name");
         if (product) productName = product.name;
       }
-      
-      if (typeof productName === 'string') {
+
+      if (typeof productName === "string") {
         let slug = productName
           .toString()
           .toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
-          .replace(/^-+/, '')
-          .replace(/-+$/, '');
-        
+          .replace(/[^a-z0-9\s-]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-")
+          .replace(/^-+/, "")
+          .replace(/-+$/, "");
+
         let count = 1;
         let baseSlug = slug;
-        
+
         // Check if slug already exists and make it unique if needed
         while (true) {
-          const existingSlug = await this.constructor.findOne({ 
+          const existingSlug = await this.constructor.findOne({
             slug,
-            _id: { $ne: this._id }
+            _id: { $ne: this._id },
           });
           if (!existingSlug) break;
           slug = `${baseSlug}-${count++}`; // Add counter to make it unique
         }
-        
+
         this.slug = slug;
       }
     }
     // If no slug or product, generate a random slug
     else if (!this.slug) {
-      this.slug = 'seo-' + Math.random().toString(36).substr(2, 9);
+      this.slug = "seo-" + Math.random().toString(36).substr(2, 9);
     }
-    
+
     next();
   } catch (error) {
     next(error);

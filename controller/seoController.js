@@ -8,25 +8,21 @@ const createSeo = async (req, res) => {
   try {
     let { product, ...seoData } = req.body;
 
-    // Parse openGraph.images if sent as a comma-separated string
-    if (seoData.openGraph && typeof seoData.openGraph.images === "string") {
-      seoData.openGraph.images = seoData.openGraph.images
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
-
-    // Parse twitter.player_width and player_height as numbers if sent as strings
-    if (seoData.twitter) {
-      if (typeof seoData.twitter.player_width === "string")
-        seoData.twitter.player_width = Number(seoData.twitter.player_width);
-      if (typeof seoData.twitter.player_height === "string")
-        seoData.twitter.player_height = Number(seoData.twitter.player_height);
-    }
+    // Convert string numbers to numbers for Twitter player dimensions
+    if (typeof seoData.twitterPlayerWidth === "string")
+      seoData.twitterPlayerWidth = Number(seoData.twitterPlayerWidth);
+    if (typeof seoData.twitterPlayerHeight === "string")
+      seoData.twitterPlayerHeight = Number(seoData.twitterPlayerHeight);
+      
+    // Convert string numbers to numbers for Open Graph video dimensions
+    if (typeof seoData.ogVideoWidth === "string")
+      seoData.ogVideoWidth = Number(seoData.ogVideoWidth);
+    if (typeof seoData.ogVideoHeight === "string")
+      seoData.ogVideoHeight = Number(seoData.ogVideoHeight);
 
     // All fields are optional, including product and location
 
-    // Check if product exists and prevent duplicates
+    // Check if product exists
     if (product) {
       // Check if product exists in database
       const productExists = await Product.findById(product);
@@ -36,16 +32,7 @@ const createSeo = async (req, res) => {
           message: "Product not found in the database",
         });
       }
-
-      // Check if SEO already exists for this product (prevent duplicates)
-      const existingSeo = await Seo.findOne({ product });
-      if (existingSeo) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "SEO data already exists for this product. Each product can only have one SEO entry.",
-        });
-      }
+      // Allow multiple SEO entries for the same product
     }
 
     // Check if location exists if provided
@@ -189,27 +176,20 @@ const updateSeo = async (req, res) => {
 
     let { product, location, ...updateData } = req.body;
 
-    // Parse openGraph.images if sent as a comma-separated string
-    if (
-      updateData.openGraph &&
-      typeof updateData.openGraph.images === "string"
-    ) {
-      updateData.openGraph.images = updateData.openGraph.images
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
+    // Convert string numbers to numbers for Twitter player dimensions
+    if (typeof updateData.twitterPlayerWidth === "string") {
+      updateData.twitterPlayerWidth = Number(updateData.twitterPlayerWidth);
     }
-
-    // Parse twitter.player_width and player_height as numbers if sent as strings
-    if (updateData.twitter) {
-      if (typeof updateData.twitter.player_width === "string")
-        updateData.twitter.player_width = Number(
-          updateData.twitter.player_width
-        );
-      if (typeof updateData.twitter.player_height === "string")
-        updateData.twitter.player_height = Number(
-          updateData.twitter.player_height
-        );
+    if (typeof updateData.twitterPlayerHeight === "string") {
+      updateData.twitterPlayerHeight = Number(updateData.twitterPlayerHeight);
+    }
+      
+    // Convert string numbers to numbers for Open Graph video dimensions
+    if (typeof updateData.ogVideoWidth === "string") {
+      updateData.ogVideoWidth = Number(updateData.ogVideoWidth);
+    }
+    if (typeof updateData.ogVideoHeight === "string") {
+      updateData.ogVideoHeight = Number(updateData.ogVideoHeight);
     }
 
     // Handle product update if provided
@@ -224,14 +204,8 @@ const updateSeo = async (req, res) => {
           });
         }
 
-        // Check for duplicate SEO entry for this product
-        const existingSeo = await Seo.findOne({ product, _id: { $ne: id } });
-        if (existingSeo) {
-          return res.status(400).json({
-            success: false,
-            message: "SEO data already exists for this product",
-          });
-        }
+        // Allow multiple SEO entries for the same product
+        // No duplicate check needed
       }
       // If product is set to null, we'll allow it (it will be removed)
     }
