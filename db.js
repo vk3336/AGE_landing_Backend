@@ -46,7 +46,7 @@ const connectDB = async () => {
     });
   } catch (error) {
     // Optionally log to a file or monitoring service
-    process.exit(1);
+    throw error;
   }
 };
 

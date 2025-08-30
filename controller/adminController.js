@@ -28,7 +28,16 @@ const createTransporter = () => {
 // Send OTP to admin email
 const sendOTP = async (req, res) => {
   try {
-    console.log('sendOTP called with:', req.body);
+    console.log('\n=== OTP Request Debug ===');
+    console.log('Request received at:', new Date().toISOString());
+    console.log('Request body:', JSON.stringify(req.body));
+    console.log('Environment:', process.env.NODE_ENV || 'development');
+    console.log('Email config:', {
+      service: process.env.EMAIL_SERVICE,
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS ? '***' + process.env.EMAIL_PASS.slice(-3) : 'not set'
+    });
+    
     const { email } = req.body;
     
     if (!email) {
@@ -87,30 +96,51 @@ const sendOTP = async (req, res) => {
     await admin.save();
 
     // Send OTP via email
-    const transporter = createTransporter();
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Admin Login OTP",
-      html: `
-        <h2>Admin Login OTP</h2>
-        <p>Your OTP for admin login is: <strong>${otp}</strong></p>
-        <p>This OTP will expire in 10 minutes.</p>
-        <p>If you didn't request this OTP, please ignore this email.</p>
-      `,
-    };
+    try {
+      console.log('Creating email transporter...');
+      const transporter = createTransporter();
+      
+      console.log('Preparing email options...');
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Admin Login OTP",
+        html: `
+          <h2>Admin Login OTP</h2>
+          <p>Your OTP for admin login is: <strong>${otp}</strong></p>
+          <p>This OTP will expire in 10 minutes.</p>
+          <p>If you didn't request this OTP, please ignore this email.</p>
+        `,
+      };
 
-    await transporter.sendMail(mailOptions);
+      console.log('Sending email...');
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Email sent successfully:', info.messageId);
+    } catch (emailError) {
+      console.error('Failed to send email:', {
+        error: emailError.message,
+        stack: emailError.stack,
+        email: email,
+        service: process.env.EMAIL_SERVICE
+      });
+      throw emailError; // Re-throw to be caught by the outer catch
+    }
 
     res.status(200).json({
       success: true,
       message: "OTP sent successfully to admin email",
     });
   } catch (error) {
+    console.error('Error in sendOTP:', {
+      error: error.message,
+      stack: error.stack,
+      time: new Date().toISOString()
+    });
+    
     res.status(500).json({
       success: false,
       message: "Failed to send OTP",
-      error: error.message,
+      error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
     });
   }
 };
@@ -118,7 +148,13 @@ const sendOTP = async (req, res) => {
 // Verify OTP and login admin
 const verifyOTP = async (req, res) => {
   try {
-    console.log('verifyOTP called with:', { email: req.body.email, otp: req.body.otp ? '***' : 'missing' });
+    console.log('\n=== OTP Verification Debug ===');
+    console.log('Verification request at:', new Date().toISOString());
+    console.log('Request body:', JSON.stringify({
+      ...req.body,
+      otp: req.body.otp ? '***' + req.body.otp.slice(-2) : 'missing'
+    }));
+    
     const { email, otp } = req.body;
     
     if (!email || !otp) {
@@ -179,7 +215,17 @@ const verifyOTP = async (req, res) => {
     }
 
     // Verify OTP
-    if (!admin.isValidOTP(otp)) {
+    console.log('Verifying OTP...');
+    const isValid = admin.isValidOTP(otp);
+    console.log('OTP validation result:', isValid ? 'Valid' : 'Invalid/Expired');
+    
+    if (!isValid) {
+      console.log('OTP verification failed:', {
+        storedOTP: admin.otp,
+        receivedOTP: otp,
+        otpExpiresAt: admin.otpExpiresAt,
+        currentTime: new Date()
+      });
       return res.status(400).json({
         success: false,
         message: "Invalid or expired OTP",
@@ -187,10 +233,17 @@ const verifyOTP = async (req, res) => {
     }
 
     // Clear OTP and update login status
+    console.log('Clearing OTP and updating login status...');
     await admin.clearOTP();
     admin.isLoggedIn = true;
     admin.lastLoginAt = new Date();
     await admin.save();
+    
+    console.log('Admin login successful:', {
+      email: admin.email,
+      isSuperAdmin: admin.email.toLowerCase() === process.env.NEXT_PUBLIC_SUPER_ADMIN?.toLowerCase(),
+      lastLoginAt: admin.lastLoginAt
+    });
 
     // Prepare response data
     const responseData = {
