@@ -1,18 +1,19 @@
 const checkSuperAdmin = (req, res, next) => {
-  const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN;
-  const adminEmailHeader = req.headers['x-admin-email'];
+  const roleManagementKey = process.env.ROLE_MANAGEMENT_KEY;
+  const roleManagementValue = process.env.ROLE_MANAGEMENT_VALUE;
+  const roleHeader = req.headers[roleManagementKey?.toLowerCase()];
 
-  if (!superAdminEmail) {
-    console.error("NEXT_PUBLIC_SUPER_ADMIN not set in environment variables.");
+  if (!roleManagementKey || !roleManagementValue) {
+    console.error("Role management environment variables not configured.");
     return res.status(500).json({
-      error: "Internal server error: Super admin email not configured."
+      error: "Internal server error: Role management not properly configured."
     });
   }
 
-  if (!adminEmailHeader || adminEmailHeader.toLowerCase() !== superAdminEmail.toLowerCase()) {
+  if (!roleHeader || roleHeader !== roleManagementValue) {
     return res.status(403).json({ 
       success: false,
-      message: "Forbidden: Only super admin can perform this action." 
+      message: "Forbidden: Invalid or missing role management credentials." 
     });
   }
   next();
