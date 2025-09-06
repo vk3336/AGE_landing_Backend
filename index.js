@@ -5,7 +5,6 @@ const bodyParser = require("body-parser");
 const helmet = require("helmet");
 const compression = require("compression");
 const rateLimit = require("express-rate-limit");
-const app = express();
 
 const connectDB = require("./db");
 const adminRoutes = require("./routes/adminRoutes");
@@ -27,7 +26,7 @@ const motifRoutes = require("./routes/motifRoutes");
 const roleManagementRoutes = require("./routes/roleManagementRoutes");
 const staticSeoRoutes = require("./routes/staticSeoRoutes");
 const userRoutes = require("./routes/userRoutes");
-const apiKeyMiddleware = require("./middleware/apiKeyMiddleware"); // Import the new middleware
+const apiKeyMiddleware = require("./middleware/apiKeyMiddleware");
 
 // Location routes
 const countryRoutes = require("./routes/country.routes");
@@ -36,48 +35,37 @@ const cityRoutes = require("./routes/city.routes");
 const locationRoutes = require("./routes/location.routes");
 const contactRoutes = require("./routes/contactRoutes");
 
+const app = express();
 const port = process.env.PORT || 7000;
 
-// Enhanced DB connection with logging
-connectDB().then(() => {
-  console.log('MongoDB connected successfully');
-}).catch(err => {
-  console.error('MongoDB connection error:', err);
-  process.exit(1);
-});
+// --- DB connection
+connectDB()
+  .then(() => console.log("MongoDB connected successfully"))
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
+  });
 
 const baseUrl = process.env.BASE_URL || "http://localhost:7000";
 const apiBasePaths = (process.env.API_BASE_PATHS || "api")
   .split(",")
-  .map((path) => path.trim());
+  .map((p) => p.trim())
+  .filter(Boolean);
 
-// 🚀 ULTRA-FAST COMPRESSION
+// --- Compression early
 app.use(compression());
 
-// 🚀 RATE LIMITING for stability
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // limit each IP to 1000 requests per windowMs
-  message: "Too many requests from this IP, please try again later.",
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use(limiter);
-
-// 🚀 ULTRA-FAST MIDDLEWARE OPTIMIZATIONS
-// Support multiple frontend URLs
-const allowedOrigins = (
-  process.env.FRONTEND_URLS || "http://localhost:3000"
-).split(",");
+// --- CORS (multi-origin)
+const allowedOrigins = (process.env.FRONTEND_URLS || "http://localhost:3000")
+  .split(",")
+  .map((o) => o.trim());
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
+    origin(origin, cb) {
+      // Allow tools / same-origin (no Origin header) and configured frontends
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      return cb(new Error("Not allowed by CORS"));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -87,11 +75,11 @@ app.use(
       process.env.Role_Management_Key || "x-admin-email",
       process.env.API_KEY_NAME || "x-api-key",
     ],
-    maxAge: 86400, // 24 hours cache
+    maxAge: 86400, // cache preflight for 24h
   })
 );
 
-// 🚀 OPTIMIZED BODY PARSER
+// --- Body parsers
 app.use(
   bodyParser.json({
     limit: "10mb",
@@ -106,7 +94,7 @@ app.use(
   })
 );
 
-// 🚀 SECURITY WITH PERFORMANCE
+// --- Helmet (API-safe settings)
 app.use(
   helmet({
     contentSecurityPolicy: false,
@@ -114,55 +102,67 @@ app.use(
   })
 );
 
-// Apply API Key Middleware
-app.use(apiKeyMiddleware);
+/**
+ * ✅ HEALTH ENDPOINTS FIRST (no auth, no limits)
+ * Mount before rate limiting and API key middleware.
+ */
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: Date.now() });
+});
+// Optional mirrors for infra probes:
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: Date.now() });
+});
+app.head("/api/health", (req, res) => res.sendStatus(200));
+app.head("/health", (req, res) => res.sendStatus(200));
 
-// 🚀 RESPONSE TIME MONITORING (silent)
+// --- Rate limiting (skip health endpoints)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 1000,
+  message: "Too many requests from this IP, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === "/health" || req.path === "/api/health",
+});
+app.use(limiter);
+
+// --- Response time header (silent)
 app.use((req, res, next) => {
   const start = Date.now();
   res.on("finish", () => {
     const duration = Date.now() - start;
     try {
       res.setHeader("X-Response-Time", `${duration}ms`);
-    } catch (error) {
-      // Ignore header setting errors
-    }
-    // Silent monitoring - no console logs
+    } catch (_) {}
   });
   next();
 });
 
-// Warn if required .env variables are missing
-const requiredEnv = [
-  "MONGODB_URI",
-  "EMAIL_USER",
-  "EMAIL_PASS",
-  "API_SECRET_KEY",
-];
-requiredEnv.forEach((key) => {
+// --- Warn if required env missing
+["MONGODB_URI", "EMAIL_USER", "EMAIL_PASS", "API_SECRET_KEY"].forEach((key) => {
   if (!process.env[key]) {
     console.warn(`Warning: Required environment variable ${key} is missing!`);
   }
 });
 
-// 🚀 CACHE HEADERS for better performance
+// --- Light caching
 app.use((req, res, next) => {
-  // Cache static assets for 1 hour
   if (req.path.includes("/images/") || req.path.includes("/static/")) {
-    res.setHeader("Cache-Control", "public, max-age=3600");
-  }
-  // Cache API responses for 5 minutes
-  else if (req.method === "GET") {
-    res.setHeader("Cache-Control", "public, max-age=300");
+    res.setHeader("Cache-Control", "public, max-age=3600"); // 1h
+  } else if (req.method === "GET") {
+    res.setHeader("Cache-Control", "public, max-age=300"); // 5m
   }
   next();
 });
 
-// Function to register routes for a specific base path
+// --- API key middleware AFTER health
+app.use(apiKeyMiddleware);
+
+// --- Route registrar
 const registerRoutes = (basePath) => {
   const apiPath = `/${basePath}`;
 
-  // Main routes
   app.use(`${apiPath}/admin`, adminRoutes);
   app.use(`${apiPath}/category`, categoryRoutes);
   app.use(`${apiPath}/structure`, structureRoutes);
@@ -182,7 +182,8 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/roles`, roleManagementRoutes);
   app.use(`${apiPath}/static-seo`, staticSeoRoutes);
   app.use(`${apiPath}/users`, userRoutes);
-  // Location routes
+
+  // Locations
   app.use(`${apiPath}/countries`, countryRoutes);
   app.use(`${apiPath}/states`, stateRoutes);
   app.use(`${apiPath}/cities`, cityRoutes);
@@ -190,50 +191,43 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/contacts`, contactRoutes);
 };
 
-// Register routes for all base paths
+// --- Register routes for each base path (e.g., /api)
 apiBasePaths.forEach((basePath) => {
-  if (basePath) {
-    // Skip empty paths
-    console.log(`Registering API routes for path: /${basePath}`);
-    registerRoutes(basePath);
-  }
+  console.log(`Registering API routes for path: /${basePath}`);
+  registerRoutes(basePath);
 });
 
+// --- Root index
 app.get("/", (req, res) => {
-  const endpoints = [];
-
-  // Add sample endpoints for each base path
-  apiBasePaths.forEach((basePath) => {
-    if (basePath) {
-      const apiPath = `/${basePath}`;
-      endpoints.push({
-        basePath: apiPath,
-        endpoints: [
-          `${apiPath}/admin`,
-          `${apiPath}/category`,
-          `${apiPath}/structure`,
-          `${apiPath}/content`,
-          // Add other endpoints as needed
-        ],
-      });
-    }
+  const endpoints = apiBasePaths.map((basePath) => {
+    const apiPath = `/${basePath}`;
+    return {
+      basePath: apiPath,
+      endpoints: [
+        `${apiPath}/admin`,
+        `${apiPath}/category`,
+        `${apiPath}/structure`,
+        `${apiPath}/content`,
+        // add more as needed
+      ],
+    };
   });
 
   res.json({
     message: "Welcome to the API",
     availableBasePaths: apiBasePaths.map((p) => `/${p}`),
-    endpoints: endpoints,
+    endpoints,
   });
 });
 
+// --- 404
 app.use((req, res) => {
-  res.status(404).json({
-    message: "Route not found",
-  });
+  res.status(404).json({ message: "Route not found" });
 });
 
 module.exports = app;
 
+// --- Start when run directly
 if (require.main === module) {
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
