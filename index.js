@@ -38,6 +38,12 @@ const contactRoutes = require("./routes/contactRoutes");
 const app = express();
 const port = process.env.PORT || 7000;
 
+const baseUrl = process.env.BASE_URL || "http://localhost:7000";
+const apiBasePaths = (process.env.API_BASE_PATHS || "api")
+  .split(",")
+  .map((p) => p.trim())
+  .filter(Boolean);
+
 // --- DB connection
 connectDB()
   .then(() => console.log("MongoDB connected successfully"))
@@ -45,12 +51,6 @@ connectDB()
     console.error("MongoDB connection error:", err);
     process.exit(1);
   });
-
-const baseUrl = process.env.BASE_URL || "http://localhost:7000";
-const apiBasePaths = (process.env.API_BASE_PATHS || "api")
-  .split(",")
-  .map((p) => p.trim())
-  .filter(Boolean);
 
 // --- Compression early
 app.use(compression());
@@ -109,7 +109,6 @@ app.use(
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok", timestamp: Date.now() });
 });
-// Optional mirrors for infra probes:
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", timestamp: Date.now() });
 });
@@ -156,8 +155,42 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- API key middleware AFTER health
-app.use(apiKeyMiddleware);
+/**
+ * ✅ Accept text/plain on /{base}/admin (OTP endpoints) to avoid preflight
+ * This must be BEFORE route registration and before API key middleware.
+ */
+const acceptTextPlainForAdmin = (basePath) => {
+  const p = `/${basePath}/admin`;
+  app.use(p, bodyParser.text({ type: "text/plain" }));
+  app.use(p, (req, _res, next) => {
+    // If Content-Type was text/plain but payload is JSON string, parse it
+    if (typeof req.body === "string" && req.body.trim().startsWith("{")) {
+      try {
+        req.body = JSON.parse(req.body);
+      } catch (_) {}
+    }
+    next();
+  });
+};
+apiBasePaths.forEach(acceptTextPlainForAdmin);
+
+/**
+ * ✅ API key bypass for OTP + health
+ * Wrap the API key middleware so we can skip specific paths.
+ */
+const skipAuthPaths = new Set([
+  // health mirrors
+  "/health",
+  "/api/health",
+  // with base path
+  ...apiBasePaths.map((b) => `/${b}/admin/sendotp`),
+  ...apiBasePaths.map((b) => `/${b}/admin/verifyotp`),
+]);
+
+app.use((req, res, next) => {
+  if (skipAuthPaths.has(req.path)) return next();
+  return apiKeyMiddleware(req, res, next);
+});
 
 // --- Route registrar
 const registerRoutes = (basePath) => {
@@ -208,7 +241,6 @@ app.get("/", (req, res) => {
         `${apiPath}/category`,
         `${apiPath}/structure`,
         `${apiPath}/content`,
-        // add more as needed
       ],
     };
   });
@@ -221,7 +253,7 @@ app.get("/", (req, res) => {
 });
 
 // --- 404
-app.use((req, res) => {
+app.use((_, res) => {
   res.status(404).json({ message: "Route not found" });
 });
 
