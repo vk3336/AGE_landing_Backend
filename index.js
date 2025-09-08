@@ -1,4 +1,6 @@
 require("dotenv").config();
+
+
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -34,6 +36,7 @@ const stateRoutes = require("./routes/state.routes");
 const cityRoutes = require("./routes/city.routes");
 const locationRoutes = require("./routes/location.routes");
 const contactRoutes = require("./routes/contactRoutes");
+const landingchatRoute = require("./routes/landingchatRoute");
 
 const app = express();
 const port = process.env.PORT || 7000;
@@ -105,7 +108,9 @@ app.use(
 /**
  * ✅ HEALTH ENDPOINTS FIRST (no auth, no limits)
  * Mount before rate limiting and API key middleware.
+ *
  */
+
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok", timestamp: Date.now() });
 });
@@ -189,6 +194,7 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/cities`, cityRoutes);
   app.use(`${apiPath}/locations`, locationRoutes);
   app.use(`${apiPath}/contacts`, contactRoutes);
+  app.use(`${apiPath}/chatbot`, landingchatRoute);
 };
 
 // --- Register routes for each base path (e.g., /api)
