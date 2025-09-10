@@ -1078,4 +1078,68 @@ module.exports = {
   getProductsByCmValue,
   getProductsByQuantityValue,
   getProductBySlug,
+  
+  // DELETE PRODUCT IMAGE
+  async deleteProductImage(req, res) {
+    try {
+      const { id, imageName } = req.params;
+      
+      // Find the product
+      const product = await Product.findById(id);
+      if (!product) {
+        return res.status(404).json({ success: false, message: 'Product not found' });
+      }
+      
+      // Determine which image field contains the image to delete
+      const imageFields = ['img', 'image1', 'image2'];
+      let imageDeleted = false;
+      
+      for (const field of imageFields) {
+        if (product[field] && product[field].includes(imageName)) {
+          try {
+            // Extract public ID from the Cloudinary URL
+            // The public ID is the part of the URL after the last slash and before the file extension
+            const urlParts = product[field].split('/');
+            const filename = urlParts[urlParts.length - 1];
+            const publicId = filename.split('.')[0]; // Remove file extension
+            
+            // Delete the image from Cloudinary
+            await cloudinaryServices.cloudinaryImageDelete(publicId);
+            
+            // Remove the image URL from the product
+            product[field] = undefined;
+            await product.save();
+            
+            imageDeleted = true;
+            break;
+          } catch (error) {
+            console.error(`Error deleting ${field} image from Cloudinary:`, error);
+            return res.status(500).json({ 
+              success: false, 
+              message: `Error deleting ${field} image from Cloudinary` 
+            });
+          }
+        }
+      }
+      
+      if (!imageDeleted) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Image not found in product' 
+        });
+      }
+      
+      res.status(200).json({ 
+        success: true, 
+        message: 'Image deleted successfully' 
+      });
+      
+    } catch (error) {
+      console.error('Error deleting product image:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Server error while deleting image' 
+      });
+    }
+  },
 };

@@ -74,4 +74,7 @@ router.get(
 // GET PRODUCT BY SLUG
 router.get("/slug/:slug", productController.getProductBySlug);
 
+// DELETE PRODUCT IMAGE
+router.delete("/image/:id/:imageName", productController.deleteProductImage);
+
 module.exports = router;
