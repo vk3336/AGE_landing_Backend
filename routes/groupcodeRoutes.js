@@ -25,5 +25,6 @@ router.put(
   groupcodeController.update
 );
 router.delete("/:id", groupcodeController.deleteById);
+router.delete("/:id/image", groupcodeController.deleteImage);
 
 module.exports = router;
