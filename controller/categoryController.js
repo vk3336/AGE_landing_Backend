@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Category = require("../model/Category");
 const { body, validationResult } = require("express-validator");
 const { cloudinaryServices } = require("../services/cloudinary.service.js");
@@ -169,6 +170,63 @@ const updateCategory = async (req, res) => {
   }
 };
 
+  // Delete category image
+const deleteCategoryImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find the category
+    const category = await Category.findById(id);
+    if (!category) {
+      return res.status(404).json({ success: false, message: 'Category not found' });
+    }
+    
+    // Check if category has an image
+    if (!category.image) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Category does not have an image to delete' 
+      });
+    }
+    
+    // Extract public ID from the Cloudinary URL
+    const urlParts = category.image.split('/');
+    const filename = urlParts[urlParts.length - 1];
+    const publicId = `categories/${filename.split('.')[0]}`; // Include 'categories' folder
+    
+    try {
+      // Delete the image from Cloudinary
+      await cloudinaryServices.cloudinaryImageDelete(publicId);
+      
+      // Update the category to remove the image
+      category.image = undefined;
+      await category.save();
+      
+      res.status(200).json({ 
+        success: true, 
+        message: 'Category image deleted successfully',
+        category
+      });
+      
+    } catch (error) {
+      console.error('Error deleting category image from Cloudinary:', error);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Error deleting category image from Cloudinary',
+        error: error.message
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error in deleteCategoryImage:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error while deleting category image',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   upload,
   createCategory,
@@ -176,5 +234,6 @@ module.exports = {
   viewCategoryById,
   deleteCategoryById,
   updateCategory,
+  deleteCategoryImage,
   validate,
 };

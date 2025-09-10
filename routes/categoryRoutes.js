@@ -27,4 +27,7 @@ router.put(
 // Delete category
 router.delete("/:id", categoryController.deleteCategoryById);
 
+// Delete category image
+router.delete("/:id/image", categoryController.deleteCategoryImage);
+
 module.exports = router;
