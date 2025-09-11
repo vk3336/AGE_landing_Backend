@@ -40,6 +40,26 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    altimg1: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    altimg2: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    altimg3: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    altvideo: {
+      type: String,
+      required: false,
+      trim: true,
+    },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",

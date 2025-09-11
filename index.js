@@ -37,6 +37,7 @@ const cityRoutes = require("./routes/city.routes");
 const locationRoutes = require("./routes/location.routes");
 const contactRoutes = require("./routes/contactRoutes");
 const landingchatRoute = require("./routes/landingchatRoute");
+const aboutUsRoutes = require("./routes/aboutUsRoutes");
 
 const app = express();
 const port = process.env.PORT || 7000;
@@ -195,6 +196,7 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/locations`, locationRoutes);
   app.use(`${apiPath}/contacts`, contactRoutes);
   app.use(`${apiPath}/chatbot`, landingchatRoute);
+  app.use(`${apiPath}/aboutus`, aboutUsRoutes);
 };
 
 // --- Register routes for each base path (e.g., /api)
