@@ -17,7 +17,10 @@ const {
   getSeoByPurchasePriceValue,
   getSeoByIdNoPopulate,
   getShopyProducts,
+  searchSeos,
 } = require("../controller/seoController");
+
+router.get("/search/:q", searchSeos);
 
 // Create SEO
 router.post("/", createSeo);

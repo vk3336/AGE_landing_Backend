@@ -4,6 +4,7 @@ const suitableforController = require("../controller/suitableforController");
 
 router.post("/", suitableforController.validate, suitableforController.create);
 router.get("/", suitableforController.viewAll);
+router.get("/search/:q", suitableforController.searchSuitablefors);
 router.get("/:id", suitableforController.viewById);
 router.put(
   "/:id",

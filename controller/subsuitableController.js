@@ -3,6 +3,22 @@ const Subsuitable = require("../model/Subsuitable");
 const Suitablefor = require("../model/Suitablefor");
 const Product = require("../model/Product");
 
+// SEARCH SUBSUITABLES BY NAME
+exports.searchSubsuitables = async (req, res, next) => {
+  const q = req.params.q || "";
+  // Escape regex special characters
+  const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const safeQ = escapeRegex(q);
+  try {
+    const results = await Subsuitable.find({
+      name: { $regex: safeQ, $options: "i" },
+    });
+    res.status(200).json({ status: 1, data: results });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.validate = [
   body("name")
     .trim()
@@ -10,28 +26,27 @@ exports.validate = [
     .withMessage("Name must be at least 2 characters")
     .notEmpty()
     .withMessage("Name is required"),
-  body("suitablefor")
-    .custom(async (value) => {
-      // Convert single value to array if needed
-      const values = Array.isArray(value) ? value : [value];
-      
-      if (values.length === 0) {
-        throw new Error("Suitablefor must have at least one item");
+  body("suitablefor").custom(async (value) => {
+    // Convert single value to array if needed
+    const values = Array.isArray(value) ? value : [value];
+
+    if (values.length === 0) {
+      throw new Error("Suitablefor must have at least one item");
+    }
+
+    // Check if all values are valid MongoDB ObjectIds
+    for (const val of values) {
+      if (!/^[0-9a-fA-F]{24}$/.test(val)) {
+        throw new Error(`Invalid MongoDB ObjectId: ${val}`);
       }
-      
-      // Check if all values are valid MongoDB ObjectIds
-      for (const val of values) {
-        if (!/^[0-9a-fA-F]{24}$/.test(val)) {
-          throw new Error(`Invalid MongoDB ObjectId: ${val}`);
-        }
-        // Check if each referenced suitablefor exists
-        const exists = await Suitablefor.exists({ _id: val });
-        if (!exists) {
-          throw new Error(`Referenced suitablefor does not exist: ${val}`);
-        }
+      // Check if each referenced suitablefor exists
+      const exists = await Suitablefor.exists({ _id: val });
+      if (!exists) {
+        throw new Error(`Referenced suitablefor does not exist: ${val}`);
       }
-      return true;
-    }),
+    }
+    return true;
+  }),
 ];
 
 exports.create = async (req, res) => {
@@ -42,7 +57,9 @@ exports.create = async (req, res) => {
   try {
     const { name, suitablefor } = req.body;
     // Convert single value to array if needed
-    const suitableforArray = Array.isArray(suitablefor) ? suitablefor : [suitablefor];
+    const suitableforArray = Array.isArray(suitablefor)
+      ? suitablefor
+      : [suitablefor];
     const item = new Subsuitable({ name, suitablefor: suitableforArray });
     await item.save();
     res.status(201).json({ success: true, data: item });
@@ -92,7 +109,9 @@ exports.update = async (req, res) => {
     const { id } = req.params;
     const { name, suitablefor } = req.body;
     // Convert single value to array if needed
-    const suitableforArray = Array.isArray(suitablefor) ? suitablefor : [suitablefor];
+    const suitableforArray = Array.isArray(suitablefor)
+      ? suitablefor
+      : [suitablefor];
     const updateData = { name, suitablefor: suitableforArray };
     const updated = await Subsuitable.findByIdAndUpdate(id, updateData, {
       new: true,
@@ -135,4 +154,5 @@ module.exports = {
   update: exports.update,
   deleteById: exports.deleteById,
   validate: exports.validate,
+  searchSubsuitables: exports.searchSubsuitables,
 };

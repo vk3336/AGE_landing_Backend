@@ -4,6 +4,22 @@ const { cloudinaryServices } = require("../services/cloudinary.service.js");
 const slugify = require("slugify");
 const Product = require("../model/Product");
 
+// SEARCH GROUPCODES BY NAME
+exports.searchGroupcodes = async (req, res, next) => {
+  const q = req.params.q || "";
+  // Escape regex special characters
+  const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const safeQ = escapeRegex(q);
+  try {
+    const results = await Groupcode.find({
+      name: { $regex: safeQ, $options: "i" },
+    });
+    res.status(200).json({ status: 1, data: results });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.validate = [
   body("name")
     .trim()
@@ -15,8 +31,8 @@ exports.validate = [
 
 exports.create = async (req, res) => {
   // Debug log incoming data
-  console.log('REQ.BODY:', req.body);
-  console.log('REQ.FILES:', req.files);
+  console.log("REQ.BODY:", req.body);
+  console.log("REQ.FILES:", req.files);
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ success: false, errors: errors.array() });
@@ -172,63 +188,65 @@ exports.deleteById = async (req, res) => {
 exports.deleteImage = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Find the group code
     const groupcode = await Groupcode.findById(id);
     if (!groupcode) {
-      return res.status(404).json({ success: false, message: 'Group code not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Group code not found" });
     }
-    
+
     // Check if group code has an image
     if (!groupcode.img) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Group code does not have an image to delete' 
+      return res.status(400).json({
+        success: false,
+        message: "Group code does not have an image to delete",
       });
     }
-    
+
     try {
       // Extract public ID from the Cloudinary URL
-      const urlParts = groupcode.img.split('/');
+      const urlParts = groupcode.img.split("/");
       const filename = urlParts[urlParts.length - 1];
       // Extract the public ID without the file extension
-      const publicId = `groupcode/${filename.split('.')[0]}`;
-      
+      const publicId = `groupcode/${filename.split(".")[0]}`;
+
       try {
         // First try to delete with the exact public ID
         await cloudinaryServices.cloudinaryImageDelete(publicId);
       } catch (cloudinaryError) {
-        console.log('First attempt failed, trying alternative public ID format...');
+        console.log(
+          "First attempt failed, trying alternative public ID format..."
+        );
         // If that fails, try with the full public ID from the URL
         const fullPublicId = `groupcode/${filename}`;
         await cloudinaryServices.cloudinaryImageDelete(fullPublicId);
       }
-      
+
       // Update the group code to remove the image
       groupcode.img = undefined;
       await groupcode.save();
-      
-      res.status(200).json({ 
-        success: true, 
-        message: 'Group code image deleted successfully',
-        groupcode
+
+      res.status(200).json({
+        success: true,
+        message: "Group code image deleted successfully",
+        groupcode,
       });
-      
     } catch (error) {
-      console.error('Error deleting group code image from Cloudinary:', error);
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Error deleting group code image from Cloudinary',
-        error: error.message
+      console.error("Error deleting group code image from Cloudinary:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error deleting group code image from Cloudinary",
+        error: error.message,
       });
     }
-    
   } catch (error) {
-    console.error('Error in deleteImage:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error while deleting group code image',
-      error: error.message
+    console.error("Error in deleteImage:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while deleting group code image",
+      error: error.message,
     });
   }
 };
@@ -241,4 +259,5 @@ module.exports = {
   deleteById: exports.deleteById,
   deleteImage: exports.deleteImage,
   validate: exports.validate,
+  searchGroupcodes: exports.searchGroupcodes,
 };

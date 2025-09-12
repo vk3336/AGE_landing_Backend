@@ -2,6 +2,22 @@ const { body, validationResult } = require("express-validator");
 const Finish = require("../model/Finish");
 const Subfinish = require("../model/Subfinish");
 
+// SEARCH FINISHES BY NAME
+exports.searchFinishes = async (req, res, next) => {
+  const q = req.params.q || "";
+  // Escape regex special characters
+  const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const safeQ = escapeRegex(q);
+  try {
+    const results = await Finish.find({
+      name: { $regex: safeQ, $options: "i" },
+    });
+    res.status(200).json({ status: 1, data: results });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.validate = [
   body("name")
     .trim()
@@ -100,4 +116,5 @@ module.exports = {
   update: exports.update,
   deleteById: exports.deleteById,
   validate: exports.validate,
+  searchFinishes: exports.searchFinishes,
 };

@@ -3,6 +3,22 @@ const Product = require("../model/Product");
 const Location = require("../model/location.model");
 const mongoose = require("mongoose");
 
+// SEARCH SEOS BY TITLE
+const searchSeos = async (req, res, next) => {
+  const q = req.params.q || "";
+  // Escape regex special characters
+  const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const safeQ = escapeRegex(q);
+  try {
+    const results = await Seo.find({
+      title: { $regex: safeQ, $options: "i" },
+    });
+    res.status(200).json({ status: 1, data: results });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Create SEO
 const createSeo = async (req, res) => {
   try {
@@ -13,7 +29,7 @@ const createSeo = async (req, res) => {
       seoData.twitterPlayerWidth = Number(seoData.twitterPlayerWidth);
     if (typeof seoData.twitterPlayerHeight === "string")
       seoData.twitterPlayerHeight = Number(seoData.twitterPlayerHeight);
-      
+
     // Convert string numbers to numbers for Open Graph video dimensions
     if (typeof seoData.ogVideoWidth === "string")
       seoData.ogVideoWidth = Number(seoData.ogVideoWidth);
@@ -183,7 +199,7 @@ const updateSeo = async (req, res) => {
     if (typeof updateData.twitterPlayerHeight === "string") {
       updateData.twitterPlayerHeight = Number(updateData.twitterPlayerHeight);
     }
-      
+
     // Convert string numbers to numbers for Open Graph video dimensions
     if (typeof updateData.ogVideoWidth === "string") {
       updateData.ogVideoWidth = Number(updateData.ogVideoWidth);
@@ -337,13 +353,13 @@ const getShopyProducts = async (req, res) => {
 
     const [products, total] = await Promise.all([
       Seo.find({ shopyProduct: true })
-        .populate('product', 'name img')
-        .populate('location', 'name')
+        .populate("product", "name img")
+        .populate("location", "name")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      Seo.countDocuments({ shopyProduct: true })
+      Seo.countDocuments({ shopyProduct: true }),
     ]);
 
     res.json({
@@ -352,11 +368,11 @@ const getShopyProducts = async (req, res) => {
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: page,
-      data: products
+      data: products,
     });
   } catch (error) {
-    console.error('Error fetching shopy products:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error("Error fetching shopy products:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -561,4 +577,5 @@ module.exports = {
   getSeoByPurchasePriceValue,
   getSeoByIdNoPopulate,
   getShopyProducts,
+  searchSeos
 };

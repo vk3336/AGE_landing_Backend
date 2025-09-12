@@ -2,6 +2,22 @@ const { body, validationResult } = require("express-validator");
 const Color = require("../model/Color");
 const Product = require("../model/Product");
 
+// SEARCH COLORS BY NAME
+exports.searchColors = async (req, res, next) => {
+  const q = req.params.q || "";
+  // Escape regex special characters
+  const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const safeQ = escapeRegex(q);
+  try {
+    const results = await Color.find({
+      name: { $regex: safeQ, $options: "i" },
+    });
+    res.status(200).json({ status: 1, data: results });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.validate = [
   body("name")
     .trim()
@@ -24,7 +40,9 @@ exports.create = async (req, res) => {
   } catch (error) {
     if (error.code === 11000) {
       // Duplicate key error
-      return res.status(400).json({ success: false, message: "Color name must be unique." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Color name must be unique." });
     }
     res.status(500).json({ success: false, message: error.message });
   }
@@ -66,7 +84,11 @@ exports.update = async (req, res) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
-    const updated = await Color.findByIdAndUpdate(id, { name }, { new: true, runValidators: true });
+    const updated = await Color.findByIdAndUpdate(
+      id,
+      { name },
+      { new: true, runValidators: true }
+    );
     if (!updated) {
       return res.status(404).json({ success: false, message: "Not found" });
     }
@@ -74,7 +96,9 @@ exports.update = async (req, res) => {
   } catch (error) {
     if (error.code === 11000) {
       // Duplicate key error
-      return res.status(400).json({ success: false, message: "Color name must be unique." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Color name must be unique." });
     }
     res.status(500).json({ success: false, message: error.message });
   }
@@ -108,4 +132,5 @@ module.exports = {
   update: exports.update,
   deleteById: exports.deleteById,
   validate: exports.validate,
+  searchColors: exports.searchColors,
 };

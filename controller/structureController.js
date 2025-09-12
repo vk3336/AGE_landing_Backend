@@ -2,6 +2,22 @@ const { body, validationResult } = require("express-validator");
 const Structure = require("../model/Structure");
 const Substructure = require("../model/Substructure");
 
+// SEARCH STRUCTURES BY NAME
+exports.searchStructures = async (req, res, next) => {
+  const q = req.params.q || "";
+  // Escape regex special characters
+  const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const safeQ = escapeRegex(q);
+  try {
+    const results = await Structure.find({
+      name: { $regex: safeQ, $options: "i" },
+    });
+    res.status(200).json({ status: 1, data: results });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.validate = [
   body("name")
     .trim()
@@ -108,4 +124,5 @@ module.exports = {
   update: exports.update,
   deleteById: exports.deleteById,
   validate: exports.validate,
+  searchStructures: exports.searchStructures,
 };

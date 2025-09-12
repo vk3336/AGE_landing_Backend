@@ -8,6 +8,7 @@ router.post(
   substructureController.create
 );
 router.get("/", substructureController.viewAll);
+router.get("/search/:q", substructureController.searchSubstructures);
 router.get("/:id", substructureController.viewById);
 router.put(
   "/:id",

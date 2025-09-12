@@ -13,6 +13,9 @@ router.post(
 // View all categories
 router.get("/", categoryController.viewAllCategories);
 
+// Search categories
+router.get("/search/:q", categoryController.searchCategories);
+
 // View category by ID
 router.get("/:id", categoryController.viewCategoryById);
 

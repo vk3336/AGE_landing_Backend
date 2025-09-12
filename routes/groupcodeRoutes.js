@@ -14,6 +14,7 @@ router.post(
   groupcodeController.create
 );
 router.get("/", groupcodeController.viewAll);
+router.get("/search/:q", groupcodeController.searchGroupcodes);
 router.get("/:id", groupcodeController.viewById);
 router.put(
   "/:id",

@@ -4,6 +4,7 @@ const subsuitableController = require("../controller/subsuitableController");
 
 router.post("/", subsuitableController.validate, subsuitableController.create);
 router.get("/", subsuitableController.viewAll);
+router.get("/search/:q", subsuitableController.searchSubsuitables);
 router.get("/:id", subsuitableController.viewById);
 router.put(
   "/:id",
