@@ -4,12 +4,12 @@ const Product = require("../model/Product");
 // Middleware to handle color array from form data
 const handleColorArray = (req, res, next) => {
   // Handle color[] field (from form data)
-  if (req.body['color[]']) {
+  if (req.body["color[]"]) {
     // Convert to array if it's a single value
-    req.body.color = Array.isArray(req.body['color[]']) 
-      ? req.body['color[]'] 
-      : [req.body['color[]']];
-    delete req.body['color[]'];
+    req.body.color = Array.isArray(req.body["color[]"])
+      ? req.body["color[]"]
+      : [req.body["color[]"]];
+    delete req.body["color[]"];
   }
   // Ensure color is always an array
   else if (req.body.color && !Array.isArray(req.body.color)) {
@@ -97,20 +97,20 @@ const validate = [
     .optional()
     .isMongoId()
     .withMessage("Groupcode must be a valid Mongo ID"),
-  body("color")
-    .optional()
-    .isArray()
-    .withMessage("Color must be an array"),
-  body('color.*')
+  body("color").optional().isArray().withMessage("Color must be an array"),
+  body("color.*")
     .optional()
     .isMongoId()
-    .withMessage('Each color must be a valid Mongo ID'),
+    .withMessage("Each color must be a valid Mongo ID"),
   body("motif")
     .optional()
     .isMongoId()
     .withMessage("Motif must be a valid Mongo ID"),
   body("um").optional().isString().withMessage("UM must be a string"),
-  body("currency").optional().isString().withMessage("Currency must be a string"),
+  body("currency")
+    .optional()
+    .isString()
+    .withMessage("Currency must be a string"),
   body("gsm").optional().isNumeric().withMessage("GSM must be a number"),
   body("oz").optional().isNumeric().withMessage("OZ must be a number"),
   body("cm").optional().isNumeric().withMessage("CM must be a number"),
@@ -120,11 +120,11 @@ const validate = [
 const create = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    console.error('Validation errors:', errors.array());
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Validation failed',
-      errors: errors.array() 
+    console.error("Validation errors:", errors.array());
+    return res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      errors: errors.array(),
     });
   }
   try {
@@ -206,8 +206,7 @@ const create = async (req, res) => {
       altimg1,
       altimg2,
       altimg3,
-      altvideo
-      
+      altvideo,
     } = req.body;
     let quantity = undefined;
     if (rawQuantity !== undefined && rawQuantity !== "") {
@@ -220,41 +219,67 @@ const create = async (req, res) => {
     // 🚀 BATCH VALIDATION - Check all references in parallel if provided
     const validationPromises = [
       // Only validate category if provided
-      category ? Category.exists({ _id: category }).then(exists => 
-        exists ? { field: 'category', exists: true } : { field: 'category', exists: false }
-      ) : Promise.resolve({ field: 'category', exists: true }),
-      
+      category
+        ? Category.exists({ _id: category }).then((exists) =>
+            exists
+              ? { field: "category", exists: true }
+              : { field: "category", exists: false }
+          )
+        : Promise.resolve({ field: "category", exists: true }),
+
       // Only validate substructure if provided
-      substructure ? Substructure.exists({ _id: substructure }).then(exists => 
-        exists ? { field: 'substructure', exists: true } : { field: 'substructure', exists: false }
-      ) : Promise.resolve({ field: 'substructure', exists: true }),
-      
+      substructure
+        ? Substructure.exists({ _id: substructure }).then((exists) =>
+            exists
+              ? { field: "substructure", exists: true }
+              : { field: "substructure", exists: false }
+          )
+        : Promise.resolve({ field: "substructure", exists: true }),
+
       // Only validate content if provided
-      content ? Content.exists({ _id: content }).then(exists => 
-        exists ? { field: 'content', exists: true } : { field: 'content', exists: false }
-      ) : Promise.resolve({ field: 'content', exists: true }),
-      
+      content
+        ? Content.exists({ _id: content }).then((exists) =>
+            exists
+              ? { field: "content", exists: true }
+              : { field: "content", exists: false }
+          )
+        : Promise.resolve({ field: "content", exists: true }),
+
       // Only validate design if provided
-      design ? Design.exists({ _id: design }).then(exists => 
-        exists ? { field: 'design', exists: true } : { field: 'design', exists: false }
-      ) : Promise.resolve({ field: 'design', exists: true }),
-      
+      design
+        ? Design.exists({ _id: design }).then((exists) =>
+            exists
+              ? { field: "design", exists: true }
+              : { field: "design", exists: false }
+          )
+        : Promise.resolve({ field: "design", exists: true }),
+
       // Only validate subfinish if provided
-      subfinish ? Subfinish.exists({ _id: subfinish }).then(exists => 
-        exists ? { field: 'subfinish', exists: true } : { field: 'subfinish', exists: false }
-      ) : Promise.resolve({ field: 'subfinish', exists: true }),
-      
+      subfinish
+        ? Subfinish.exists({ _id: subfinish }).then((exists) =>
+            exists
+              ? { field: "subfinish", exists: true }
+              : { field: "subfinish", exists: false }
+          )
+        : Promise.resolve({ field: "subfinish", exists: true }),
+
       // Only validate subsuitable if provided
-      subsuitable ? Subsuitable.exists({ _id: subsuitable }).then(exists => 
-        exists ? { field: 'subsuitable', exists: true } : { field: 'subsuitable', exists: false }
-      ) : Promise.resolve({ field: 'subsuitable', exists: true }),
-      
+      subsuitable
+        ? Subsuitable.exists({ _id: subsuitable }).then((exists) =>
+            exists
+              ? { field: "subsuitable", exists: true }
+              : { field: "subsuitable", exists: false }
+          )
+        : Promise.resolve({ field: "subsuitable", exists: true }),
+
       // Handle color validation - colors are optional but if provided, must be valid
       (async () => {
         if (color && Array.isArray(color) && color.length > 0) {
           try {
             const count = await Color.countDocuments({ _id: { $in: color } });
-            console.log(`[DEBUG] Found ${count} valid colors out of ${color.length} requested`);
+            console.log(
+              `[DEBUG] Found ${count} valid colors out of ${color.length} requested`
+            );
             if (count !== color.length) {
               const invalidColors = [];
               // Find which colors are invalid
@@ -264,53 +289,71 @@ const create = async (req, res) => {
                   invalidColors.push(colorId);
                 }
               }
-              console.error('Invalid color IDs:', invalidColors);
-              return { field: 'color', exists: false, message: `The following color IDs are invalid: ${invalidColors.join(', ')}` };
+              console.error("Invalid color IDs:", invalidColors);
+              return {
+                field: "color",
+                exists: false,
+                message: `The following color IDs are invalid: ${invalidColors.join(
+                  ", "
+                )}`,
+              };
             }
-            return { field: 'color', exists: true }; // All colors are valid
+            return { field: "color", exists: true }; // All colors are valid
           } catch (error) {
-            console.error('Error validating colors:', error);
-            return { field: 'color', exists: false, message: 'Error validating colors' };
+            console.error("Error validating colors:", error);
+            return {
+              field: "color",
+              exists: false,
+              message: "Error validating colors",
+            };
           }
         }
-        return { field: 'color', exists: true }; // No colors provided is also valid
+        return { field: "color", exists: true }; // No colors provided is also valid
       })(),
-      
+
       // Only validate vendor if provided
-      vendor ? Vendor.exists({ _id: vendor }).then(exists => 
-        exists ? { field: 'vendor', exists: true } : { field: 'vendor', exists: false }
-      ) : Promise.resolve({ field: 'vendor', exists: true }),
-      
+      vendor
+        ? Vendor.exists({ _id: vendor }).then((exists) =>
+            exists
+              ? { field: "vendor", exists: true }
+              : { field: "vendor", exists: false }
+          )
+        : Promise.resolve({ field: "vendor", exists: true }),
+
       // Only validate groupcode if provided
-      groupcode ? Groupcode.exists({ _id: groupcode }).then(exists => 
-        exists ? { field: 'groupcode', exists: true } : { field: 'groupcode', exists: false }
-      ) : Promise.resolve({ field: 'groupcode', exists: true })
+      groupcode
+        ? Groupcode.exists({ _id: groupcode }).then((exists) =>
+            exists
+              ? { field: "groupcode", exists: true }
+              : { field: "groupcode", exists: false }
+          )
+        : Promise.resolve({ field: "groupcode", exists: true }),
     ];
 
     try {
       const validationResults = await Promise.all(validationPromises);
-      
+
       // Filter out any invalid references
-      const invalidRefs = validationResults.filter(result => !result.exists);
+      const invalidRefs = validationResults.filter((result) => !result.exists);
 
       if (invalidRefs.length > 0) {
-        console.error('Invalid references found:', invalidRefs);
+        console.error("Invalid references found:", invalidRefs);
         const errorMessages = invalidRefs
-          .map(ref => ref.message || `${ref.field} not found`)
-          .join('. ');
-          
+          .map((ref) => ref.message || `${ref.field} not found`)
+          .join(". ");
+
         return res.status(400).json({
           success: false,
-          message: errorMessages || 'Some references are invalid',
-          invalidReferences: invalidRefs
+          message: errorMessages || "Some references are invalid",
+          invalidReferences: invalidRefs,
         });
       }
     } catch (error) {
-      console.error('Error during reference validation:', error);
+      console.error("Error during reference validation:", error);
       return res.status(400).json({
         success: false,
-        message: error.message || 'Error validating references',
-        error: error.toString()
+        message: error.message || "Error validating references",
+        error: error.toString(),
       });
     }
 
@@ -325,13 +368,13 @@ const create = async (req, res) => {
     }
 
     // Handle category folder naming (optional)
-    let categoryFolder = 'products'; // Default folder if no category
+    let categoryFolder = "products"; // Default folder if no category
     if (category) {
       const categoryDoc = await Category.findById(category);
       if (!categoryDoc) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Category not found" 
+        return res.status(400).json({
+          success: false,
+          message: "Category not found",
         });
       }
       categoryFolder = slugify(categoryDoc.name, {
@@ -343,7 +386,9 @@ const create = async (req, res) => {
     // Handle main image - can be either a new file or an existing URL
     let img = req.body.img || "";
     // Check if a new file was uploaded
-    const mainImageFile = (req.files && req.files.file && req.files.file[0]) || (req.files && req.files.img && req.files.img[0]);
+    const mainImageFile =
+      (req.files && req.files.file && req.files.file[0]) ||
+      (req.files && req.files.img && req.files.img[0]);
     if (mainImageFile) {
       const uploadResult = await cloudinaryServices.cloudinaryImageUpload(
         mainImageFile.buffer,
@@ -356,7 +401,9 @@ const create = async (req, res) => {
       } else if (uploadResult && uploadResult.error) {
         return res.status(500).json({
           success: false,
-          message: "Image upload failed: " + (uploadResult.error.message || "Unknown error"),
+          message:
+            "Image upload failed: " +
+            (uploadResult.error.message || "Unknown error"),
         });
       }
     }
@@ -408,7 +455,10 @@ const create = async (req, res) => {
       // Extract AV1 video and thumbnail URLs
       if (videoResult) {
         if (videoResult.eager && videoResult.eager.length > 0) {
-          videoUrl = videoResult.eager[0].secure_url || videoResult.secure_url || videoUrl;
+          videoUrl =
+            videoResult.eager[0].secure_url ||
+            videoResult.secure_url ||
+            videoUrl;
           videoThumbnailUrl =
             videoResult.eager[1] && videoResult.eager[1].secure_url
               ? videoResult.eager[1].secure_url
@@ -449,7 +499,7 @@ const create = async (req, res) => {
       altimg1,
       altimg2,
       altimg3,
-      altvideo
+      altvideo,
     });
 
     await product.save();
@@ -540,10 +590,16 @@ const viewById = async (req, res) => {
 // Helper function to validate uploaded files
 const validateFile = (fileObj, allowedExts, maxSize, label) => {
   if (fileObj.size > maxSize) {
-    throw new Error(`${label} file size exceeds limit (${Math.round(maxSize/(1024*1024))}MB)`);
+    throw new Error(
+      `${label} file size exceeds limit (${Math.round(
+        maxSize / (1024 * 1024)
+      )}MB)`
+    );
   }
   if (!isValidExtension(fileObj.originalname, allowedExts)) {
-    throw new Error(`Invalid ${label} extension. Allowed: ${allowedExts.join(', ')}`);
+    throw new Error(
+      `Invalid ${label} extension. Allowed: ${allowedExts.join(", ")}`
+    );
   }
 };
 
@@ -555,7 +611,7 @@ const update = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = { ...req.body };
-    
+
     // Normalize req.files (multer.any() => array) into { [fieldname]: File[] }
     if (Array.isArray(req.files)) {
       const filesObj = {};
@@ -600,19 +656,29 @@ const update = async (req, res) => {
     // ---- MEDIA UPDATES ----
     try {
       // Main image: accept 'file' or 'img'
-      const mainImageFile = (req.files?.file?.[0]) || (req.files?.img?.[0]);
+      const mainImageFile = req.files?.file?.[0] || req.files?.img?.[0];
 
       if (mainImageFile) {
-        validateFile(mainImageFile, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, 'image');
+        validateFile(
+          mainImageFile,
+          ALLOWED_IMAGE_EXTENSIONS,
+          MAX_IMAGE_SIZE,
+          "image"
+        );
         const uploaded = await cloudinaryServices.cloudinaryImageUpload(
           mainImageFile.buffer,
-          req.body.name || oldProduct.name || 'product',
+          req.body.name || oldProduct.name || "product",
           categoryFolder
         );
         if (uploaded?.secure_url) {
           if (oldProduct.img) {
-            const publicId = oldProduct.img.split('/').slice(-1)[0].split('.')[0];
-            cloudinaryServices.cloudinaryImageDelete(publicId).catch(console.error);
+            const publicId = oldProduct.img
+              .split("/")
+              .slice(-1)[0]
+              .split(".")[0];
+            cloudinaryServices
+              .cloudinaryImageDelete(publicId)
+              .catch(console.error);
           }
           updateData.img = uploaded.secure_url;
         }
@@ -621,16 +687,21 @@ const update = async (req, res) => {
       // image1
       if (req.files?.image1?.[0]) {
         const f = req.files.image1[0];
-        validateFile(f, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, 'image1');
+        validateFile(f, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, "image1");
         const up = await cloudinaryServices.cloudinaryImageUpload(
           f.buffer,
-          (req.body.name || oldProduct.name || 'product') + '-image1',
+          (req.body.name || oldProduct.name || "product") + "-image1",
           categoryFolder
         );
         if (up?.secure_url) {
           if (oldProduct.image1) {
-            const publicId = oldProduct.image1.split('/').slice(-1)[0].split('.')[0];
-            cloudinaryServices.cloudinaryImageDelete(publicId).catch(console.error);
+            const publicId = oldProduct.image1
+              .split("/")
+              .slice(-1)[0]
+              .split(".")[0];
+            cloudinaryServices
+              .cloudinaryImageDelete(publicId)
+              .catch(console.error);
           }
           updateData.image1 = up.secure_url;
         }
@@ -639,16 +710,21 @@ const update = async (req, res) => {
       // image2
       if (req.files?.image2?.[0]) {
         const f = req.files.image2[0];
-        validateFile(f, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, 'image2');
+        validateFile(f, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_SIZE, "image2");
         const up = await cloudinaryServices.cloudinaryImageUpload(
           f.buffer,
-          (req.body.name || oldProduct.name || 'product') + '-image2',
+          (req.body.name || oldProduct.name || "product") + "-image2",
           categoryFolder
         );
         if (up?.secure_url) {
           if (oldProduct.image2) {
-            const publicId = oldProduct.image2.split('/').slice(-1)[0].split('.')[0];
-            cloudinaryServices.cloudinaryImageDelete(publicId).catch(console.error);
+            const publicId = oldProduct.image2
+              .split("/")
+              .slice(-1)[0]
+              .split(".")[0];
+            cloudinaryServices
+              .cloudinaryImageDelete(publicId)
+              .catch(console.error);
           }
           updateData.image2 = up.secure_url;
         }
@@ -657,27 +733,38 @@ const update = async (req, res) => {
       // video
       if (req.files?.video?.[0]) {
         const vf = req.files.video[0];
-        validateFile(vf, ALLOWED_VIDEO_EXTENSIONS, MAX_VIDEO_SIZE, 'video');
+        validateFile(vf, ALLOWED_VIDEO_EXTENSIONS, MAX_VIDEO_SIZE, "video");
         const vUp = await cloudinaryServices.cloudinaryImageUpload(
           vf.buffer,
-          (req.body.name || oldProduct.name || 'product') + '-video',
+          (req.body.name || oldProduct.name || "product") + "-video",
           categoryFolder,
           false,
-          'video' // ensure resource_type 'video'
+          "video" // ensure resource_type 'video'
         );
         if (vUp) {
           // Use eager[0] as in create(), fallback to secure_url
-          updateData.video = (vUp.eager && vUp.eager[0]?.secure_url) || vUp.secure_url || '';
-          updateData.videoThumbnail = (vUp.eager && vUp.eager[1]?.secure_url) || updateData.videoThumbnail || '';
+          updateData.video =
+            (vUp.eager && vUp.eager[0]?.secure_url) || vUp.secure_url || "";
+          updateData.videoThumbnail =
+            (vUp.eager && vUp.eager[1]?.secure_url) ||
+            updateData.videoThumbnail ||
+            "";
           // Delete old video if exists
           if (oldProduct.video) {
-            const publicId = oldProduct.video.split('/').slice(-1)[0].split('.')[0];
-            cloudinaryServices.cloudinaryImageDelete(publicId, 'video').catch(console.error);
+            const publicId = oldProduct.video
+              .split("/")
+              .slice(-1)[0]
+              .split(".")[0];
+            cloudinaryServices
+              .cloudinaryImageDelete(publicId, "video")
+              .catch(console.error);
           }
         }
       }
     } catch (mediaErr) {
-      return res.status(400).json({ success: false, message: mediaErr.message });
+      return res
+        .status(400)
+        .json({ success: false, message: mediaErr.message });
     }
 
     // 🚀 BATCH VALIDATION if references are being updated
@@ -720,7 +807,9 @@ const update = async (req, res) => {
         );
       if (updateData.color) {
         // Handle both array and single color cases
-        const colors = Array.isArray(updateData.color) ? updateData.color : [updateData.color];
+        const colors = Array.isArray(updateData.color)
+          ? updateData.color
+          : [updateData.color];
         validationPromises.push(
           (async () => {
             const count = await Color.countDocuments({ _id: { $in: colors } });
@@ -804,7 +893,7 @@ const deleteById = async (req, res) => {
   }
 };
 
-// SEARCH PRODUCTS BY NAME
+// SEARCH PRODUCTS BY NAME OR SLUG
 const searchProducts = async (req, res, next) => {
   const q = req.params.q || "";
   // Escape regex special characters
@@ -812,7 +901,10 @@ const searchProducts = async (req, res, next) => {
   const safeQ = escapeRegex(q);
   try {
     const results = await Product.find({
-      name: { $regex: safeQ, $options: "i" },
+      $or: [
+        { name: { $regex: safeQ, $options: "i" } },
+        { slug: { $regex: safeQ, $options: "i" } },
+      ],
     });
     res.status(200).json({ status: 1, data: results });
   } catch (error) {
@@ -1026,39 +1118,39 @@ const getProductsByQuantityValue = async (req, res, next) => {
 const getProductBySlug = async (req, res, next) => {
   try {
     const { slug } = req.params;
-    
+
     if (!slug) {
-      return res.status(400).json({ 
-        status: 0, 
-        message: "Product slug is required" 
+      return res.status(400).json({
+        status: 0,
+        message: "Product slug is required",
       });
     }
 
     const product = await Product.findOne({ slug })
-      .populate('category')
-      .populate('substructure')
-      .populate('content')
-      .populate('design')
-      .populate('subfinish')
-      .populate('subsuitable')
-      .populate('vendor')
-      .populate('groupcode')
-      .populate('color')
-      .populate('motif');
+      .populate("category")
+      .populate("substructure")
+      .populate("content")
+      .populate("design")
+      .populate("subfinish")
+      .populate("subsuitable")
+      .populate("vendor")
+      .populate("groupcode")
+      .populate("color")
+      .populate("motif");
 
     if (!product) {
-      return res.status(404).json({ 
-        status: 0, 
-        message: "Product not found" 
+      return res.status(404).json({
+        status: 0,
+        message: "Product not found",
       });
     }
 
-    res.status(200).json({ 
-      status: 1, 
-      data: product 
+    res.status(200).json({
+      status: 1,
+      data: product,
     });
   } catch (error) {
-    console.error('Error getting product by slug:', error);
+    console.error("Error getting product by slug:", error);
     next(error);
   }
 };
@@ -1087,67 +1179,71 @@ module.exports = {
   getProductsByCmValue,
   getProductsByQuantityValue,
   getProductBySlug,
-  
+
   // DELETE PRODUCT IMAGE
   async deleteProductImage(req, res) {
     try {
       const { id, imageName } = req.params;
-      
+
       // Find the product
       const product = await Product.findById(id);
       if (!product) {
-        return res.status(404).json({ success: false, message: 'Product not found' });
+        return res
+          .status(404)
+          .json({ success: false, message: "Product not found" });
       }
-      
+
       // Determine which image field contains the image to delete
-      const imageFields = ['img', 'image1', 'image2'];
+      const imageFields = ["img", "image1", "image2"];
       let imageDeleted = false;
-      
+
       for (const field of imageFields) {
         if (product[field] && product[field].includes(imageName)) {
           try {
             // Extract public ID from the Cloudinary URL
             // The public ID is the part of the URL after the last slash and before the file extension
-            const urlParts = product[field].split('/');
+            const urlParts = product[field].split("/");
             const filename = urlParts[urlParts.length - 1];
-            const publicId = filename.split('.')[0]; // Remove file extension
-            
+            const publicId = filename.split(".")[0]; // Remove file extension
+
             // Delete the image from Cloudinary
             await cloudinaryServices.cloudinaryImageDelete(publicId);
-            
+
             // Remove the image URL from the product
             product[field] = undefined;
             await product.save();
-            
+
             imageDeleted = true;
             break;
           } catch (error) {
-            console.error(`Error deleting ${field} image from Cloudinary:`, error);
-            return res.status(500).json({ 
-              success: false, 
-              message: `Error deleting ${field} image from Cloudinary` 
+            console.error(
+              `Error deleting ${field} image from Cloudinary:`,
+              error
+            );
+            return res.status(500).json({
+              success: false,
+              message: `Error deleting ${field} image from Cloudinary`,
             });
           }
         }
       }
-      
+
       if (!imageDeleted) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Image not found in product' 
+        return res.status(404).json({
+          success: false,
+          message: "Image not found in product",
         });
       }
-      
-      res.status(200).json({ 
-        success: true, 
-        message: 'Image deleted successfully' 
+
+      res.status(200).json({
+        success: true,
+        message: "Image deleted successfully",
       });
-      
     } catch (error) {
-      console.error('Error deleting product image:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Server error while deleting image' 
+      console.error("Error deleting product image:", error);
+      res.status(500).json({
+        success: false,
+        message: "Server error while deleting image",
       });
     }
   },
