@@ -18,6 +18,8 @@ const {
   getSeoByIdNoPopulate,
   getShopyProducts,
   searchSeos,
+  getAllSeoPublic,
+  getSeoBySlugPublic
 } = require("../controller/seoController");
 
 router.get("/search/:q", searchSeos);
@@ -27,6 +29,12 @@ router.post("/", createSeo);
 
 // Get all SEO
 router.get("/", getAllSeo);
+
+// Get all SEO without purchase price (public)
+router.get("/public", getAllSeoPublic);
+
+// Get SEO by slug without purchase price (public)
+router.get("/public/slug/:slug", getSeoBySlugPublic);
 
 // Get popular products
 router.get("/popular", getPopularProducts);

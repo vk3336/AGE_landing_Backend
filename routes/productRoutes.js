@@ -14,6 +14,12 @@ router.post(
 // View all products
 router.get("/", productController.viewAll);
 
+// View all products except vendor information
+router.get("/public", productController.getAllProductsExceptVendor);
+
+// View product by slug without vendor information
+router.get("/public/slug/:slug", productController.getPublicProductBySlug);
+
 // View product by ID
 router.get("/:id", productController.viewById);
 

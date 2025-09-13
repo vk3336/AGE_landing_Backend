@@ -560,6 +560,71 @@ const getSeoByIdNoPopulate = async (req, res) => {
   }
 };
 
+// Get all SEO data without purchase price
+const getAllSeoPublic = async (req, res) => {
+  try {
+    const seoList = await Seo.find()
+      .select("-purchasePrice") // Exclude purchase price
+      .select(
+        "product location popularproduct topratedproduct landingPageProduct shopyProduct slug title createdAt updatedAt"
+      )
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      message: "Public SEO list retrieved successfully",
+      data: seoList,
+      total: seoList.length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error getting public SEO list",
+      error: error.message,
+    });
+  }
+};
+
+// Get SEO by slug without purchase price
+const getSeoBySlugPublic = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    if (!slug) {
+      return res.status(400).json({
+        success: false,
+        message: "Slug is required",
+      });
+    }
+
+    const seo = await Seo.findOne({ slug })
+      .select("-purchasePrice") // Exclude purchase price
+      .select(
+        "product location popularproduct topratedproduct landingPageProduct shopyProduct slug title createdAt updatedAt"
+      )
+      .lean();
+
+    if (!seo) {
+      return res.status(404).json({
+        success: false,
+        message: "SEO not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Public SEO details retrieved successfully",
+      data: seo,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error getting public SEO details",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createSeo,
   getAllSeo,
@@ -577,5 +642,8 @@ module.exports = {
   getSeoByPurchasePriceValue,
   getSeoByIdNoPopulate,
   getShopyProducts,
-  searchSeos
+  searchSeos,
+  // New public methods
+  getAllSeoPublic,
+  getSeoBySlugPublic,
 };

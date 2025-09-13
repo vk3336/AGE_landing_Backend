@@ -1155,6 +1155,61 @@ const getProductBySlug = async (req, res, next) => {
   }
 };
 
+// GET ALL PRODUCTS WITHOUT VENDOR INFORMATION
+const getAllProductsExceptVendor = async (req, res) => {
+  try {
+    const products = await Product.find({})
+      .select("-vendor") // Exclude vendor field
+     
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      total: products.length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// GET PRODUCT BY SLUG WITHOUT VENDOR INFO
+const getPublicProductBySlug = async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+
+    if (!slug) {
+      return res.status(400).json({
+        status: 0,
+        message: "Product slug is required",
+      });
+    }
+
+    const product = await Product.findOne({ slug })
+      .select("-vendor") // Exclude vendor field
+      
+      .lean();
+
+    if (!product) {
+      return res.status(404).json({
+        status: 0,
+        message: "Product not found",
+      });
+    }
+
+    res.status(200).json({
+      status: 1,
+      data: product,
+    });
+  } catch (error) {
+    console.error("Error getting public product by slug:", error);
+    next(error);
+  }
+};
+
 module.exports = {
   upload,
   multiUpload,
@@ -1179,6 +1234,8 @@ module.exports = {
   getProductsByCmValue,
   getProductsByQuantityValue,
   getProductBySlug,
+  getAllProductsExceptVendor,
+  getPublicProductBySlug,
 
   // DELETE PRODUCT IMAGE
   async deleteProductImage(req, res) {
