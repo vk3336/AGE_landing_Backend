@@ -31,6 +31,10 @@ const seoSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
+    leadtime: {
+      type: Number,
+      required: false,
+    },
     sku: {
       type: String,
       required: false,
