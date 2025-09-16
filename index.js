@@ -1,6 +1,5 @@
 require("dotenv").config();
 
-
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -38,6 +37,7 @@ const locationRoutes = require("./routes/location.routes");
 const contactRoutes = require("./routes/contactRoutes");
 const landingchatRoute = require("./routes/landingchatRoute");
 const aboutUsRoutes = require("./routes/aboutUsRoutes");
+const officeInformationRoutes = require("./routes/officeInformationRoutes");
 
 const app = express();
 const port = process.env.PORT || 7000;
@@ -197,6 +197,7 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/contacts`, contactRoutes);
   app.use(`${apiPath}/chatbot`, landingchatRoute);
   app.use(`${apiPath}/aboutus`, aboutUsRoutes);
+  app.use(`${apiPath}/officeinformation`, officeInformationRoutes);
 };
 
 // --- Register routes for each base path (e.g., /api)
