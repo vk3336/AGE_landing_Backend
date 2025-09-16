@@ -42,6 +42,10 @@ const officeInformationSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    microsofttoken: {
+      type: String,
+      required: true,
+    },
     companyEmployeeRange: {
       type: String,
       required: true,
