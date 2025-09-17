@@ -42,20 +42,47 @@ exports.createCity = async (req, res) => {
   }
 };
 
-// Get all cities
+// Get all cities with pagination
 exports.getAllCities = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    
     const filter = {};
     if (req.query.state) filter.state = req.query.state;
     if (req.query.country) filter.country = req.query.country;
+    if (req.query.search) {
+      filter.$or = [
+        { name: { $regex: req.query.search, $options: 'i' } },
+        { slug: { $regex: req.query.search, $options: 'i' } }
+      ];
+    }
 
-    const cities = await City.find(filter).sort("name");
+    const [cities, total] = await Promise.all([
+      City.find(filter)
+        .sort("name")
+        .skip(skip)
+        .limit(limit)
+        .populate('state', 'name')
+        .populate('country', 'name'),
+      City.countDocuments(filter)
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
 
     res.status(200).json({
       status: "success",
-      results: cities.length,
       data: {
         cities,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1,
+        }
       },
     });
   } catch (error) {

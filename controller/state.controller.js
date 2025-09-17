@@ -42,24 +42,68 @@ exports.createState = async (req, res) => {
   }
 };
 
-// Get all states
+// Get all states with pagination
 exports.getAllStates = async (req, res) => {
   try {
-    const filter = {};
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const search = req.query.search || '';
+    
+    // Build the query
+    const query = {};
+    
+    // Add country filter if provided
     if (req.query.country) {
-      filter.country = req.query.country;
+      query.country = req.query.country;
+    }
+    
+    // Add search filter if provided
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { code: { $regex: search, $options: 'i' } },
+      ];
+      
+      // If we have a country name search, we need to look it up
+      if (search.length > 2) { // Only do this for longer search terms
+        const Country = require('../model/country.model');
+        const countries = await Country.find({
+          name: { $regex: search, $options: 'i' }
+        }, '_id');
+        
+        if (countries.length > 0) {
+          if (!query.$or) query.$or = [];
+          query.$or.push({ country: { $in: countries.map(c => c._id) } });
+        }
+      }
     }
 
-    const states = await State.find(filter).sort("name");
+    // Get total count for pagination
+    const total = await State.countDocuments(query);
+    
+    // Get paginated results
+    const states = await State.find(query)
+      .sort("name")
+      .skip(skip)
+      .limit(limit)
+      .populate('country', 'name code');
 
     res.status(200).json({
       status: "success",
-      results: states.length,
       data: {
         states,
+        pagination: {
+          total,
+          page,
+          pages: Math.ceil(total / limit),
+          limit,
+          results: states.length
+        }
       },
     });
   } catch (error) {
+    console.error('Error in getAllStates:', error);
     res.status(400).json({
       status: "error",
       message: error.message,
