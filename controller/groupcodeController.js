@@ -38,7 +38,7 @@ exports.create = async (req, res) => {
     return res.status(400).json({ success: false, errors: errors.array() });
   }
   try {
-    const { name } = req.body;
+    const { name, altimg = "", altvideo = "" } = req.body;
     let imgUrl = "";
     let videoUrl = "";
     // Upload image if present
@@ -48,28 +48,37 @@ exports.create = async (req, res) => {
         name + "-img",
         "groupcode"
       );
-      if (imgResult && imgResult.secure_url) imgUrl = imgResult.secure_url;
+      imgUrl = imgResult.secure_url;
     }
     // Upload video if present
     if (req.files && req.files.video && req.files.video[0]) {
-      const videoResult = await cloudinaryServices.cloudinaryImageUpload(
+      const videoResult = await cloudinaryServices.cloudinaryVideoUpload(
         req.files.video[0].buffer,
         name + "-video",
-        "groupcode",
-        false,
-        "video"
+        "groupcode"
       );
-      if (videoResult && videoResult.eager && videoResult.eager.length > 0) {
-        videoUrl = videoResult.eager[0].secure_url || videoResult.secure_url;
-      } else if (videoResult && videoResult.secure_url) {
-        videoUrl = videoResult.secure_url;
-      }
+      videoUrl = videoResult.secure_url;
     }
-    const item = new Groupcode({ name, img: imgUrl, video: videoUrl });
-    await item.save();
-    res.status(201).json({ success: true, data: item });
+    const newGroupcode = new Groupcode({
+      name,
+      img: imgUrl,
+      altimg,
+      video: videoUrl,
+      altvideo,
+    });
+    await newGroupcode.save();
+    res.status(201).json({
+      success: true,
+      message: "Groupcode created successfully",
+      data: newGroupcode,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Error creating groupcode:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error creating groupcode",
+      error: error.message,
+    });
   }
 };
 
@@ -111,10 +120,11 @@ exports.update = async (req, res) => {
   }
   try {
     const { id } = req.params;
-    const { name } = req.body;
+    const { name, altimg, altvideo } = req.body;
     const oldGroupcode = await Groupcode.findById(id).lean();
     let imgUrl = oldGroupcode?.img || "";
     let videoUrl = oldGroupcode?.video || "";
+    
     // Upload new image if present
     if (req.files && req.files.img && req.files.img[0]) {
       const imgResult = await cloudinaryServices.cloudinaryImageUpload(
@@ -124,6 +134,7 @@ exports.update = async (req, res) => {
       );
       if (imgResult && imgResult.secure_url) imgUrl = imgResult.secure_url;
     }
+    
     // Upload new video if present
     if (req.files && req.files.video && req.files.video[0]) {
       const videoResult = await cloudinaryServices.cloudinaryImageUpload(
@@ -139,11 +150,24 @@ exports.update = async (req, res) => {
         videoUrl = videoResult.secure_url;
       }
     }
+    
+    // Prepare update data
+    const updateData = { 
+      name, 
+      img: imgUrl, 
+      video: videoUrl 
+    };
+    
+    // Only update altimg and altvideo if they are provided
+    if (altimg !== undefined) updateData.altimg = altimg;
+    if (altvideo !== undefined) updateData.altvideo = altvideo;
+    
     const updated = await Groupcode.findByIdAndUpdate(
       id,
-      { name, img: imgUrl, video: videoUrl },
+      updateData,
       { new: true }
     );
+    
     if (!updated) {
       return res.status(404).json({ success: false, message: "Not found" });
     }

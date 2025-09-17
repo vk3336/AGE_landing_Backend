@@ -39,7 +39,7 @@ const createCategory = async (req, res) => {
     return res.status(400).json({ success: false, errors: errors.array() });
   }
   try {
-    const { name } = req.body;
+    const { name, altimg } = req.body;
     if (!req.file) {
       return res
         .status(400)
@@ -64,7 +64,11 @@ const createCategory = async (req, res) => {
     }
 
     const image = uploadResult.secure_url;
-    const category = new Category({ name, image });
+    const category = new Category({ 
+      name, 
+      image, 
+      ...(altimg && { altimg }) // Only include altimg if it exists
+    });
     await category.save();
 
     res.status(201).json({ success: true, data: category });
@@ -160,9 +164,10 @@ const updateCategory = async (req, res) => {
   }
   try {
     const { id } = req.params;
-    const { name } = req.body;
+    const { name, altimg } = req.body;
     const updateData = {};
     if (name) updateData.name = name;
+    if (altimg !== undefined) updateData.altimg = altimg;
     if (req.file) {
       const imageBuffer = req.file.buffer;
       const uploadResult = await cloudinaryServices.cloudinaryImageUpload(

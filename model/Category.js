@@ -13,6 +13,11 @@ const categorySchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    altimg: {
+      type: String,
+      required: false,
+      trim: true,
+    },
   },
   {
     timestamps: true,
