@@ -568,6 +568,29 @@ const getAllSeoPublic = async (req, res) => {
       .select(
         "product location popularproduct topratedproduct landingPageProduct shopyProduct slug title createdAt updatedAt"
       )
+      .populate({
+        path: "product",
+        populate: [
+          { path: "category", select: "name slug" },
+          { path: "substructure", select: "name slug" },
+          { path: "content", select: "name description" },
+          { path: "design", select: "name slug" },
+          { path: "subfinish", select: "name slug" },
+          { path: "subsuitable", select: "name slug" },
+          { path: "vendor", select: "name slug" },
+          { path: "groupcode", select: "name slug" },
+          { path: "color", select: "name slug" },
+          { path: "motif", select: "name slug" },
+        ],
+      })
+      .populate({
+        path: "location",
+        populate: [
+          { path: "country", select: "name code" },
+          { path: "state", select: "name code" },
+        ],
+        select: "name slug",
+      })
       .lean();
 
     res.status(200).json({
@@ -602,6 +625,29 @@ const getSeoBySlugPublic = async (req, res) => {
       .select(
         "product location popularproduct topratedproduct landingPageProduct shopyProduct slug title createdAt updatedAt"
       )
+      .populate({
+        path: "product",
+        populate: [
+          { path: "category", select: "name slug" },
+          { path: "substructure", select: "name slug" },
+          { path: "content", select: "name description" },
+          { path: "design", select: "name slug" },
+          { path: "subfinish", select: "name slug" },
+          { path: "subsuitable", select: "name slug" },
+          { path: "vendor", select: "name slug" },
+          { path: "groupcode", select: "name slug" },
+          { path: "color", select: "name slug" },
+          { path: "motif", select: "name slug" },
+        ],
+      })
+      .populate({
+        path: "location",
+        populate: [
+          { path: "country", select: "name code" },
+          { path: "state", select: "name code" },
+        ],
+        select: "name slug",
+      })
       .lean();
 
     if (!seo) {
