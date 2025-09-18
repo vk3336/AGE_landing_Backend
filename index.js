@@ -6,6 +6,7 @@ const bodyParser = require("body-parser");
 const helmet = require("helmet");
 const compression = require("compression");
 const rateLimit = require("express-rate-limit");
+const session = require("express-session");
 
 const connectDB = require("./db");
 const adminRoutes = require("./routes/adminRoutes");
@@ -41,6 +42,20 @@ const officeInformationRoutes = require("./routes/officeInformationRoutes");
 
 const app = express();
 const port = process.env.PORT || 7000;
+
+// Session configuration
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your-secret-key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  })
+);
 
 // --- DB connection
 connectDB()
