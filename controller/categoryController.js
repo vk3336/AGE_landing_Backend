@@ -5,6 +5,8 @@ const { cloudinaryServices } = require("../services/cloudinary.service.js");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 const Product = require("../model/Product");
+const { transformCategoryImages } = require("../utils/categoryImageUtils");
+const { transformImageUrl } = require("../utils/imageUtils");
 
 // SEARCH CATEGORIES BY NAME
 const searchCategories = async (req, res, next) => {
@@ -63,7 +65,8 @@ const createCategory = async (req, res) => {
       });
     }
 
-    const image = uploadResult.secure_url;
+    // Transform the image URL to include width and height parameters
+    const image = transformImageUrl(uploadResult.secure_url);
     const category = new Category({ 
       name, 
       image, 
@@ -88,7 +91,7 @@ const viewAllCategories = async (req, res) => {
       : "";
     const skip = (page - 1) * limit;
 
-    // 🚀 PARALLEL EXECUTION for faster queries
+    // PARALLEL EXECUTION for faster queries
     const [categories, total] = await Promise.all([
       Category.find({}, fields)
         .skip(skip)
@@ -98,15 +101,15 @@ const viewAllCategories = async (req, res) => {
       Category.countDocuments(),
     ]);
 
+    // Transform image URLs
+    const transformedCategories = transformCategoryImages(categories);
+
     res.status(200).json({
       success: true,
-      data: categories,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      data: transformedCategories,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -117,13 +120,14 @@ const viewAllCategories = async (req, res) => {
 const viewCategoryById = async (req, res) => {
   try {
     const { id } = req.params;
-    const category = await Category.findById(id);
+    const category = await Category.findById(req.params.id).lean();
     if (!category) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Category not found" });
+      return res.status(404).json({ success: false, message: 'Category not found' });
     }
-    res.status(200).json({ success: true, data: category });
+  
+    // Transform image URL before sending response
+    const transformedCategory = transformCategoryImages(category);
+    res.status(200).json({ success: true, data: transformedCategory });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -168,24 +172,29 @@ const updateCategory = async (req, res) => {
     const updateData = {};
     if (name) updateData.name = name;
     if (altimg !== undefined) updateData.altimg = altimg;
+    // If there's a new image, upload it
     if (req.file) {
-      const imageBuffer = req.file.buffer;
       const uploadResult = await cloudinaryServices.cloudinaryImageUpload(
-        imageBuffer,
-        name || "category",
-        "categories"
+        req.file.buffer,
+        name || (await Category.findById(id)).name, // Get category name if name is not provided
+        'categories'
       );
-      updateData.image = uploadResult.secure_url;
+      // Transform the image URL to include width and height parameters
+      updateData.image = transformImageUrl(uploadResult.secure_url);
     }
+    
     const updatedCategory = await Category.findByIdAndUpdate(id, updateData, {
       new: true,
     });
+    
     if (!updatedCategory) {
       return res
         .status(404)
         .json({ success: false, message: "Category not found" });
     }
-    res.status(200).json({ success: true, data: updatedCategory });
+    // Transform image URL before sending response
+    const transformedCategory = transformCategoryImages(updatedCategory);
+    res.status(200).json({ success: true, data: transformedCategory });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

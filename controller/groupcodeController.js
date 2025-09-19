@@ -3,6 +3,7 @@ const Groupcode = require("../model/Groupcode");
 const { cloudinaryServices } = require("../services/cloudinary.service.js");
 const slugify = require("slugify");
 const Product = require("../model/Product");
+const { transformGroupcodeImages } = require("../utils/groupcodeImageUtils");
 
 // SEARCH GROUPCODES BY NAME
 exports.searchGroupcodes = async (req, res, next) => {
@@ -48,6 +49,7 @@ exports.create = async (req, res) => {
         name + "-img",
         "groupcode"
       );
+      // Transform the image URL to include width and height parameters
       imgUrl = imgResult.secure_url;
     }
     // Upload video if present
@@ -61,7 +63,7 @@ exports.create = async (req, res) => {
     }
     const newGroupcode = new Groupcode({
       name,
-      img: imgUrl,
+      img: imgUrl, // The URL will be transformed when fetched
       altimg,
       video: videoUrl,
       altvideo,
@@ -94,7 +96,10 @@ exports.viewAll = async (req, res) => {
       .skip(skip)
       .limit(limit)
       .lean();
-    res.status(200).json({ success: true, data: items });
+      
+    // Transform image URLs before sending response
+    const transformedItems = transformGroupcodeImages(items);
+    res.status(200).json({ success: true, data: transformedItems });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -107,7 +112,9 @@ exports.viewById = async (req, res) => {
     if (!item) {
       return res.status(404).json({ success: false, message: "Not found" });
     }
-    res.status(200).json({ success: true, data: item });
+    // Transform image URL before sending response
+    const transformedItem = transformGroupcodeImages(item);
+    res.status(200).json({ success: true, data: transformedItem });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -132,7 +139,10 @@ exports.update = async (req, res) => {
         (name || oldGroupcode.name) + "-img",
         "groupcode"
       );
-      if (imgResult && imgResult.secure_url) imgUrl = imgResult.secure_url;
+      if (imgResult && imgResult.secure_url) {
+        // The URL will be transformed when fetched
+        imgUrl = imgResult.secure_url;
+      }
     }
     
     // Upload new video if present
@@ -171,7 +181,10 @@ exports.update = async (req, res) => {
     if (!updated) {
       return res.status(404).json({ success: false, message: "Not found" });
     }
-    res.status(200).json({ success: true, data: updated });
+    
+    // Transform image URL before sending response
+    const transformedUpdated = transformGroupcodeImages(updated);
+    res.status(200).json({ success: true, data: transformedUpdated });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
