@@ -35,13 +35,22 @@ const cloudinaryImageUpload = (
     if (resourceType === "image") {
       uploadOptions = {
         ...uploadOptions,
-        format: "webp",
+        format: process.env.CLOUDINARY_IMAGE_FORMAT || "webp",
         transformation: [
           { width: 500, height: 500, crop: "fill" },
-          { fetch_format: "webp", quality: "auto:good" },
+          {
+            fetch_format: process.env.CLOUDINARY_IMAGE_FORMAT || "webp",
+            quality: "auto:good",
+          },
         ],
         eager: [
-          { width: 500, height: 500, crop: "fill", format: "webp", quality: "auto:good" },
+          {
+            width: 500,
+            height: 500,
+            crop: "fill",
+            format: process.env.CLOUDINARY_IMAGE_FORMAT || "webp",
+            quality: "auto:good",
+          },
         ],
         eager_async: true,
         eager_notification_url: null,
