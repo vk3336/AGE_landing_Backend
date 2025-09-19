@@ -37,10 +37,12 @@ const cloudinaryImageUpload = (
         ...uploadOptions,
         format: "webp",
         transformation: [
-          { width: 600, height: 600, crop: "limit" },
-          { fetch_format: "auto", quality: "auto:low" },
+          { width: 500, height: 500, crop: "fill" },
+          { fetch_format: "webp", quality: "auto:good" },
         ],
-        eager: "f_auto,q_auto",
+        eager: [
+          { width: 500, height: 500, crop: "fill", format: "webp", quality: "auto:good" },
+        ],
         eager_async: true,
         eager_notification_url: null,
       };

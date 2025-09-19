@@ -1,5 +1,6 @@
 const { body, validationResult } = require("express-validator");
 const Product = require("../model/Product");
+const { transformProductImages } = require("../utils/imageUtils");
 
 // Middleware to handle color array from form data
 const handleColorArray = (req, res, next) => {
@@ -538,7 +539,7 @@ const viewAll = async (req, res) => {
       : "";
 
     // 🚀 GET ALL PRODUCTS - NO PAGINATION LIMITS
-    const products = await Product.find({}, fields)
+    let products = await Product.find({}, fields)
       .lean() // Convert to plain objects for speed
       .populate("category", "name")
       .populate("substructure", "name")
@@ -551,6 +552,9 @@ const viewAll = async (req, res) => {
       .populate("color", "name")
       .populate("motif", "name")
       .exec();
+
+    // Transform image URLs for all products
+    products = products.map(product => transformProductImages(product));
 
     res.status(200).json({
       success: true,
@@ -1061,12 +1065,17 @@ const getProductsByInchValue = async (req, res, next) => {
     const range = value * 0.15;
     const min = value - range;
     const max = value + range;
-    const matched = await Product.find({ inch: { $gte: min, $lte: max } });
-    if (!matched.length)
-      return res
-        .status(404)
-        .json({ status: 0, message: "No Inch products found in range" });
-    res.status(200).json({ status: 1, data: matched });
+    const query = { inch: { $gte: min, $lte: max } };
+    const matched = await Product.find(query);
+    // Transform image URLs for all matched products
+    const transformedProducts = matched.map(product => {
+      // Handle both Mongoose documents and plain objects
+      const productObj = typeof product.toObject === 'function' 
+        ? product.toObject() 
+        : product;
+      return transformProductImages(productObj);
+    });
+    res.status(200).json({ status: 1, data: transformedProducts });
   } catch (error) {
     next(error);
   }
@@ -1145,9 +1154,15 @@ const getProductBySlug = async (req, res, next) => {
       });
     }
 
+    // Transform image URLs before sending response
+    const productObj = typeof product.toObject === 'function' 
+      ? product.toObject() 
+      : product;
+    const productWithTransformedImages = transformProductImages(productObj);
+    
     res.status(200).json({
       status: 1,
-      data: product,
+      data: productWithTransformedImages,
     });
   } catch (error) {
     console.error("Error getting product by slug:", error);
