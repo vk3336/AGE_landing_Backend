@@ -1,6 +1,5 @@
 const { body, validationResult } = require("express-validator");
 const Product = require("../model/Product");
-const { transformProductImages } = require("../utils/imageUtils");
 
 // Middleware to handle color array from form data
 const handleColorArray = (req, res, next) => {
@@ -553,9 +552,6 @@ const viewAll = async (req, res) => {
       .populate("motif", "name")
       .exec();
 
-    // Transform image URLs for all products
-    products = products.map(product => transformProductImages(product));
-
     res.status(200).json({
       success: true,
       data: products,
@@ -585,6 +581,7 @@ const viewById = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Product not found" });
     }
+    
     res.status(200).json({ success: true, data: product });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message, error });
@@ -1070,10 +1067,9 @@ const getProductsByInchValue = async (req, res, next) => {
     // Transform image URLs for all matched products
     const transformedProducts = matched.map(product => {
       // Handle both Mongoose documents and plain objects
-      const productObj = typeof product.toObject === 'function' 
+      return typeof product.toObject === 'function' 
         ? product.toObject() 
         : product;
-      return transformProductImages(productObj);
     });
     res.status(200).json({ status: 1, data: transformedProducts });
   } catch (error) {
@@ -1158,11 +1154,10 @@ const getProductBySlug = async (req, res, next) => {
     const productObj = typeof product.toObject === 'function' 
       ? product.toObject() 
       : product;
-    const productWithTransformedImages = transformProductImages(productObj);
     
     res.status(200).json({
       status: 1,
-      data: productWithTransformedImages,
+      data: productObj,
     });
   } catch (error) {
     console.error("Error getting product by slug:", error);
@@ -1205,7 +1200,15 @@ const getPublicProductBySlug = async (req, res, next) => {
 
     const product = await Product.findOne({ slug })
       .select("-vendor") // Exclude vendor field
-      
+      .populate("category")
+      .populate("substructure")
+      .populate("content")
+      .populate("design")
+      .populate("subfinish")
+      .populate("subsuitable")
+      .populate("groupcode")
+      .populate("color")
+      .populate("motif")
       .lean();
 
     if (!product) {

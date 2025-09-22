@@ -3,7 +3,6 @@ const Groupcode = require("../model/Groupcode");
 const { cloudinaryServices } = require("../services/cloudinary.service.js");
 const slugify = require("slugify");
 const Product = require("../model/Product");
-const { transformGroupcodeImages } = require("../utils/groupcodeImageUtils");
 
 // SEARCH GROUPCODES BY NAME
 exports.searchGroupcodes = async (req, res, next) => {
@@ -97,9 +96,7 @@ exports.viewAll = async (req, res) => {
       .limit(limit)
       .lean();
       
-    // Transform image URLs before sending response
-    const transformedItems = transformGroupcodeImages(items);
-    res.status(200).json({ success: true, data: transformedItems });
+    res.status(200).json({ success: true, data: items });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -112,9 +109,7 @@ exports.viewById = async (req, res) => {
     if (!item) {
       return res.status(404).json({ success: false, message: "Not found" });
     }
-    // Transform image URL before sending response
-    const transformedItem = transformGroupcodeImages(item);
-    res.status(200).json({ success: true, data: transformedItem });
+    res.status(200).json({ success: true, data: item });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -182,9 +177,7 @@ exports.update = async (req, res) => {
       return res.status(404).json({ success: false, message: "Not found" });
     }
     
-    // Transform image URL before sending response
-    const transformedUpdated = transformGroupcodeImages(updated);
-    res.status(200).json({ success: true, data: transformedUpdated });
+    res.status(200).json({ success: true, data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

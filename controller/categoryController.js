@@ -5,7 +5,6 @@ const { cloudinaryServices } = require("../services/cloudinary.service.js");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 const Product = require("../model/Product");
-const { transformCategoryImages } = require("../utils/categoryImageUtils");
 const { transformImageUrl } = require("../utils/imageUtils");
 
 // SEARCH CATEGORIES BY NAME
@@ -101,12 +100,9 @@ const viewAllCategories = async (req, res) => {
       Category.countDocuments(),
     ]);
 
-    // Transform image URLs
-    const transformedCategories = transformCategoryImages(categories);
-
     res.status(200).json({
       success: true,
-      data: transformedCategories,
+      data: categories,
       total,
       page,
       pages: Math.ceil(total / limit),
@@ -125,9 +121,7 @@ const viewCategoryById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Category not found' });
     }
   
-    // Transform image URL before sending response
-    const transformedCategory = transformCategoryImages(category);
-    res.status(200).json({ success: true, data: transformedCategory });
+    res.status(200).json({ success: true, data: category });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -192,9 +186,7 @@ const updateCategory = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Category not found" });
     }
-    // Transform image URL before sending response
-    const transformedCategory = transformCategoryImages(updatedCategory);
-    res.status(200).json({ success: true, data: transformedCategory });
+    res.status(200).json({ success: true, data: updatedCategory });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
