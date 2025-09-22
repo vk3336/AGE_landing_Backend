@@ -5,7 +5,6 @@ const { cloudinaryServices } = require("../services/cloudinary.service.js");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 const Product = require("../model/Product");
-const { transformImageUrl } = require("../utils/imageUtils");
 
 // SEARCH CATEGORIES BY NAME
 const searchCategories = async (req, res, next) => {
@@ -64,11 +63,9 @@ const createCategory = async (req, res) => {
       });
     }
 
-    // Transform the image URL to include width and height parameters
-    const image = transformImageUrl(uploadResult.secure_url);
     const category = new Category({ 
       name, 
-      image, 
+      image: uploadResult.secure_url,
       ...(altimg && { altimg }) // Only include altimg if it exists
     });
     await category.save();
@@ -173,8 +170,7 @@ const updateCategory = async (req, res) => {
         name || (await Category.findById(id)).name, // Get category name if name is not provided
         'categories'
       );
-      // Transform the image URL to include width and height parameters
-      updateData.image = transformImageUrl(uploadResult.secure_url);
+      updateData.image = uploadResult.secure_url;
     }
     
     const updatedCategory = await Category.findByIdAndUpdate(id, updateData, {
