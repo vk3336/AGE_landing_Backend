@@ -28,6 +28,7 @@ const motifRoutes = require("./routes/motifRoutes");
 const roleManagementRoutes = require("./routes/roleManagementRoutes");
 const staticSeoRoutes = require("./routes/staticSeoRoutes");
 const userRoutes = require("./routes/userRoutes");
+const dbRoutes = require("./routes/dbRoutes");
 const apiKeyMiddleware = require("./middleware/apiKeyMiddleware");
 
 // Location routes
@@ -214,6 +215,7 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/chatbot`, landingchatRoute);
   app.use(`${apiPath}/aboutus`, aboutUsRoutes);
   app.use(`${apiPath}/officeinformation`, officeInformationRoutes);
+  app.use(`${apiPath}/db`, dbRoutes);
 };
 
 // --- Register routes for each base path (e.g., /api)
