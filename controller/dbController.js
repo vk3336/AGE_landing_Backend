@@ -71,7 +71,7 @@ const compareDatabases = async (req, res) => {
   try {
     // Get database URIs from environment variables
     const devDbUri = process.env.MONGODB_DEV_URI;
-    const prodDbUri = process.env.MONGODB_PROD_URI;
+    const prodDbUri = process.env.MONGODB_URI;
     
     if (!devDbUri || !prodDbUri) {
       return res.status(500).json({
@@ -79,7 +79,7 @@ const compareDatabases = async (req, res) => {
         message: 'Database configuration is missing. Please check your .env file',
         requiredVariables: {
           development: 'MONGODB_DEV_URI',
-          production: 'MONGODB_PROD_URI'
+          production: 'MONGODB_URI'
         }
       });
     }
