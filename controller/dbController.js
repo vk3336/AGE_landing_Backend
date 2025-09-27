@@ -285,6 +285,50 @@ const compareDatabases = async (req, res) => {
   }
 };
 
+// Get all records from all collections
+const getAllCollectionsData = async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    if (!db) {
+      return res.status(500).json({ error: 'Database not connected' });
+    }
+
+    // Get all collection names
+    const collections = await db.listCollections().toArray();
+    const collectionNames = collections.map(c => c.name).filter(name => !name.startsWith('system.'));
+
+    // Get data from each collection
+    const allData = {};
+    
+    for (const collectionName of collectionNames) {
+      try {
+        const collection = db.collection(collectionName);
+        const documents = await collection.find({}).toArray();
+        allData[collectionName] = documents;
+      } catch (err) {
+        console.error(`Error fetching data from collection ${collectionName}:`, err);
+        allData[collectionName] = { error: `Error fetching data: ${err.message}` };
+      }
+    }
+
+    res.json({
+      success: true,
+      timestamp: new Date(),
+      collectionCount: collectionNames.length,
+      data: allData
+    });
+
+  } catch (error) {
+    console.error('Error in getAllCollectionsData:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch collections data',
+      details: error.message
+    });
+  }
+};
+
 module.exports = {
   compareDatabases,
+  getAllCollectionsData
 };
