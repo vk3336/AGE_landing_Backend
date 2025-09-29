@@ -10,6 +10,6 @@ router.get('/compare', compareDatabases);
 // @route   GET /api/db/all-collections
 // @desc    Get all records from all collections in the database
 // @access  Private (recommended to add authentication middleware)
-router.get('/collections', getAllCollectionsData);
+router.get('/landingpage', getAllCollectionsData);
 
 module.exports = router;

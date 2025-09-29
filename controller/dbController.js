@@ -1,18 +1,20 @@
-const mongoose = require('mongoose');
-const { MongoClient } = require('mongodb');
+const mongoose = require("mongoose");
+const { MongoClient } = require("mongodb");
+const fs = require("fs");
+const path = require("path");
 
 // Create connections to both databases
 const connectToDatabase = async (connectionString) => {
   try {
     const client = new MongoClient(connectionString);
     await client.connect();
-    
+
     // Ping the database to verify connection
     await client.db().command({ ping: 1 });
-    
+
     return client.db();
   } catch (error) {
-    console.error('Error connecting to database:', error);
+    console.error("Error connecting to database:", error);
     throw error;
   }
 };
@@ -31,37 +33,43 @@ const formatDifferences = (differences) => {
     countMismatches: [],
     schemaDifferences: {},
     missingInProd: new Set(),
-    missingInDev: new Set()
+    missingInDev: new Set(),
   };
 
-  differences.forEach(diff => {
-    if (diff.type === 'count_mismatch') {
+  differences.forEach((diff) => {
+    if (diff.type === "count_mismatch") {
       result.countMismatches.push({
         collection: diff.collection,
         devCount: diff.devCount,
         prodCount: diff.prodCount,
-        difference: diff.devCount - diff.prodCount
+        difference: diff.devCount - diff.prodCount,
       });
-    } else if (diff.type === 'schema_difference') {
+    } else if (diff.type === "schema_difference") {
       if (!result.schemaDifferences[diff.collection]) {
         result.schemaDifferences[diff.collection] = {
           fieldsMissingInProd: [],
-          fieldsMissingInDev: []
+          fieldsMissingInDev: [],
         };
       }
-      
+
       if (diff.missingInProd && diff.missingInProd.length > 0) {
-        result.schemaDifferences[diff.collection].fieldsMissingInProd.push(...diff.missingInProd);
+        result.schemaDifferences[diff.collection].fieldsMissingInProd.push(
+          ...diff.missingInProd
+        );
       }
-      
+
       if (diff.missingInDev && diff.missingInDev.length > 0) {
-        result.schemaDifferences[diff.collection].fieldsMissingInDev.push(...diff.missingInDev);
+        result.schemaDifferences[diff.collection].fieldsMissingInDev.push(
+          ...diff.missingInDev
+        );
       }
     }
   });
 
   // Sort count mismatches by absolute difference (descending)
-  result.countMismatches.sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference));
+  result.countMismatches.sort(
+    (a, b) => Math.abs(b.difference) - Math.abs(a.difference)
+  );
 
   return result;
 };
@@ -72,15 +80,16 @@ const compareDatabases = async (req, res) => {
     // Get database URIs from environment variables
     const devDbUri = process.env.MONGODB_DEV_URI;
     const prodDbUri = process.env.MONGODB_URI;
-    
+
     if (!devDbUri || !prodDbUri) {
       return res.status(500).json({
         success: false,
-        message: 'Database configuration is missing. Please check your .env file',
+        message:
+          "Database configuration is missing. Please check your .env file",
         requiredVariables: {
-          development: 'MONGODB_DEV_URI',
-          production: 'MONGODB_URI'
-        }
+          development: "MONGODB_DEV_URI",
+          production: "MONGODB_URI",
+        },
       });
     }
 
@@ -94,11 +103,11 @@ const compareDatabases = async (req, res) => {
 
     const comparisonResult = {
       devDb: {
-        name: 'Development',
+        name: "Development",
         collections: {},
       },
       prodDb: {
-        name: 'Production',
+        name: "Production",
         collections: {},
       },
       differences: [],
@@ -122,13 +131,15 @@ const compareDatabases = async (req, res) => {
 
       // Store collection info
       comparisonResult.devDb.collections[collectionName] = { count: devCount };
-      comparisonResult.prodDb.collections[collectionName] = { count: prodCount };
+      comparisonResult.prodDb.collections[collectionName] = {
+        count: prodCount,
+      };
 
       // Find differences
       if (devCount !== prodCount) {
         comparisonResult.differences.push({
           collection: collectionName,
-          type: 'count_mismatch',
+          type: "count_mismatch",
           devCount,
           prodCount,
           message: `Document count differs: ${devCount} in dev vs ${prodCount} in prod`,
@@ -152,13 +163,17 @@ const compareDatabases = async (req, res) => {
       });
 
       // Find field differences
-      const missingInProd = [...devFields].filter((field) => !prodFields.has(field));
-      const missingInDev = [...prodFields].filter((field) => !devFields.has(field));
+      const missingInProd = [...devFields].filter(
+        (field) => !prodFields.has(field)
+      );
+      const missingInDev = [...prodFields].filter(
+        (field) => !devFields.has(field)
+      );
 
       if (missingInProd.length > 0 || missingInDev.length > 0) {
         comparisonResult.differences.push({
           collection: collectionName,
-          type: 'schema_difference',
+          type: "schema_difference",
           missingInProd,
           missingInDev,
           message: `Schema differences found in collection ${collectionName}`,
@@ -172,59 +187,72 @@ const compareDatabases = async (req, res) => {
 
     // Format the response for better readability
     const countMismatches = comparisonResult.differences
-      .filter(d => d.type === 'count_mismatch')
-      .map(d => ({
+      .filter((d) => d.type === "count_mismatch")
+      .map((d) => ({
         collection: d.collection,
         dev: d.devCount,
         prod: d.prodCount,
         difference: d.devCount - d.prodCount,
-        status: d.devCount > d.prodCount ? 'More in DEV' : 'More in PROD'
+        status: d.devCount > d.prodCount ? "More in DEV" : "More in PROD",
       }))
       .sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference));
 
     const schemaDifferences = comparisonResult.differences
-      .filter(d => d.type === 'schema_difference')
+      .filter((d) => d.type === "schema_difference")
       .reduce((acc, diff) => {
         if (!acc[diff.collection]) {
           acc[diff.collection] = {
             fieldsMissingInProd: [],
-            fieldsMissingInDev: []
+            fieldsMissingInDev: [],
           };
         }
-        
+
         if (diff.missingInProd && diff.missingInProd.length > 0) {
-          acc[diff.collection].fieldsMissingInProd = [...new Set([...acc[diff.collection].fieldsMissingInProd, ...diff.missingInProd])];
+          acc[diff.collection].fieldsMissingInProd = [
+            ...new Set([
+              ...acc[diff.collection].fieldsMissingInProd,
+              ...diff.missingInProd,
+            ]),
+          ];
         }
-        
+
         if (diff.missingInDev && diff.missingInDev.length > 0) {
-          acc[diff.collection].fieldsMissingInDev = [...new Set([...acc[diff.collection].fieldsMissingInDev, ...diff.missingInDev])];
+          acc[diff.collection].fieldsMissingInDev = [
+            ...new Set([
+              ...acc[diff.collection].fieldsMissingInDev,
+              ...diff.missingInDev,
+            ]),
+          ];
         }
-        
+
         return acc;
       }, {});
 
     // Calculate summary metrics
-    const totalDevDocs = Object.values(comparisonResult.devDb.collections)
-      .reduce((sum, col) => sum + (col.count || 0), 0);
-    const totalProdDocs = Object.values(comparisonResult.prodDb.collections)
-      .reduce((sum, col) => sum + (col.count || 0), 0);
+    const totalDevDocs = Object.values(
+      comparisonResult.devDb.collections
+    ).reduce((sum, col) => sum + (col.count || 0), 0);
+    const totalProdDocs = Object.values(
+      comparisonResult.prodDb.collections
+    ).reduce((sum, col) => sum + (col.count || 0), 0);
 
     // Format the final response
     const formattedResult = {
       // Summary Section
       summary: {
-        totalCollections: Object.keys(comparisonResult.devDb.collections).length,
+        totalCollections: Object.keys(comparisonResult.devDb.collections)
+          .length,
         documents: {
           dev: totalDevDocs,
           prod: totalProdDocs,
-          difference: totalDevDocs - totalProdDocs
+          difference: totalDevDocs - totalProdDocs,
         },
         collectionsWithIssues: {
           countMismatches: countMismatches.length,
-          schemaDifferences: Object.keys(schemaDifferences).length
-        }
+          schemaDifferences: Object.keys(schemaDifferences).length,
+        },
       },
-      
+
       // Document Count Analysis
       documentCounts: {
         // Top 10 collections by document count difference
@@ -235,40 +263,42 @@ const compareDatabases = async (req, res) => {
             dev,
             prod,
             difference,
-            status
+            status,
           })),
-        
+
         // Collections only in one environment
         uniqueCollections: {
-          onlyInDev: Object.keys(comparisonResult.devDb.collections)
-            .filter(name => !comparisonResult.prodDb.collections[name]),
-          onlyInProd: Object.keys(comparisonResult.prodDb.collections)
-            .filter(name => !comparisonResult.devDb.collections[name])
-        }
+          onlyInDev: Object.keys(comparisonResult.devDb.collections).filter(
+            (name) => !comparisonResult.prodDb.collections[name]
+          ),
+          onlyInProd: Object.keys(comparisonResult.prodDb.collections).filter(
+            (name) => !comparisonResult.devDb.collections[name]
+          ),
+        },
       },
-      
+
       // Schema Differences
       schemas: Object.entries(schemaDifferences).map(([collection, diffs]) => ({
         collection,
         issues: [
-          ...(diffs.fieldsMissingInDev.length ? [
-            `Missing in DEV (${diffs.fieldsMissingInDev.length} fields)`
-          ] : []),
-          ...(diffs.fieldsMissingInProd.length ? [
-            `Missing in PROD (${diffs.fieldsMissingInProd.length} fields)`
-          ] : [])
+          ...(diffs.fieldsMissingInDev.length
+            ? [`Missing in DEV (${diffs.fieldsMissingInDev.length} fields)`]
+            : []),
+          ...(diffs.fieldsMissingInProd.length
+            ? [`Missing in PROD (${diffs.fieldsMissingInProd.length} fields)`]
+            : []),
         ],
         fieldDetails: {
           missingInDev: diffs.fieldsMissingInDev,
-          missingInProd: diffs.fieldsMissingInProd
-        }
+          missingInProd: diffs.fieldsMissingInProd,
+        },
       })),
-      
+
       // Raw data for reference
       _raw: {
         allCountMismatches: countMismatches,
-        allSchemaDifferences: schemaDifferences
-      }
+        allSchemaDifferences: schemaDifferences,
+      },
     };
 
     res.status(200).json({
@@ -276,59 +306,86 @@ const compareDatabases = async (req, res) => {
       data: formattedResult,
     });
   } catch (error) {
-    console.error('Error comparing databases:', error);
+    console.error("Error comparing databases:", error);
     res.status(500).json({
       success: false,
-      message: 'Error comparing databases',
+      message: "Error comparing databases",
       error: error.message,
     });
   }
 };
 
-// Get all records from all collections
+// Get all records from all models
+// Get all records from all models
+// Get all records from all models
 const getAllCollectionsData = async (req, res) => {
   try {
-    const db = mongoose.connection.db;
-    if (!db) {
-      return res.status(500).json({ error: 'Database not connected' });
-    }
+    const modelsPath = path.join(__dirname, "../model");
+    const modelFiles = fs
+      .readdirSync(modelsPath)
+      .filter((file) => file.endsWith(".js") && !file.endsWith(".model.js"));
 
-    // Get all collection names
-    const collections = await db.listCollections().toArray();
-    const collectionNames = collections.map(c => c.name).filter(name => !name.startsWith('system.'));
+    const collectionsData = {};
 
-    // Get data from each collection
-    const allData = {};
-    
-    for (const collectionName of collectionNames) {
+    // Central place to define per-model field exclusions
+    // (projection: 0 = exclude, 1 = include)
+    const PROJECTIONS_BY_MODEL = {
+      Seo: { purchasePrice: 0, salesPrice: 0 },
+      Product: { vendor: 0, quantity: 0 },
+      // add more models here if needed later
+    };
+
+    for (const file of modelFiles) {
       try {
-        const collection = db.collection(collectionName);
-        const documents = await collection.find({}).toArray();
-        allData[collectionName] = documents;
+        const modelPath = path.join(modelsPath, file);
+        const model = require(modelPath);
+
+        // Skip if not a Mongoose model
+        if (!model || !model.modelName || !model.collection) continue;
+
+        const collectionName = model.collection.name;
+
+        // Apply projection if defined for this model
+        const projection = PROJECTIONS_BY_MODEL[model.modelName] || {};
+
+        const data = await model
+          .find({}, projection)  // ← exclusions applied here
+          .lean()
+          .exec();
+
+        collectionsData[collectionName] = {
+          count: data.length,
+          documents: data,
+        };
       } catch (err) {
-        console.error(`Error fetching data from collection ${collectionName}:`, err);
-        allData[collectionName] = { error: `Error fetching data: ${err.message}` };
+        console.error(`Error processing model ${file}:`, err);
+        collectionsData[file] = {
+          error: `Error processing model: ${err.message}`,
+          stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+        };
       }
     }
 
     res.json({
       success: true,
-      timestamp: new Date(),
-      collectionCount: collectionNames.length,
-      data: allData
+      timestamp: new Date().toISOString(),
+      totalCollections: Object.keys(collectionsData).length,
+      collections: collectionsData,
     });
-
   } catch (error) {
-    console.error('Error in getAllCollectionsData:', error);
+    console.error("Error in getAllCollectionsData:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch collections data',
-      details: error.message
+      error: "Failed to fetch collections data",
+      message: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };
 
+
+
 module.exports = {
   compareDatabases,
-  getAllCollectionsData
+  getAllCollectionsData,
 };
