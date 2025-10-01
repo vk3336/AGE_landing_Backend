@@ -89,6 +89,56 @@ const officeInformationSchema = new mongoose.Schema(
         message: "Logo URL must start with http:// or https://",
       },
     },
+    facebook: {
+      type: String,
+      default: "",
+      validate: {
+        validator: function (v) {
+          return v === "" || /^https?:\/\/.+/.test(v);
+        },
+        message: "Facebook URL must start with http:// or https://",
+      },
+    },
+    instagram: {
+      type: String,
+      default: "",
+      validate: {
+        validator: function (v) {
+          return v === "" || /^https?:\/\/.+/.test(v);
+        },
+        message: "Instagram URL must start with http:// or https://",
+      },
+    },
+    youtube: {
+      type: String,
+      default: "",
+      validate: {
+        validator: function (v) {
+          return v === "" || /^https?:\/\/.+/.test(v);
+        },
+        message: "YouTube URL must start with http:// or https://",
+      },
+    },
+    linkedin: {
+      type: String,
+      default: "",
+      validate: {
+        validator: function (v) {
+          return v === "" || /^https?:\/\/.+/.test(v);
+        },
+        message: "LinkedIn URL must start with http:// or https://",
+      },
+    },
+    twitter: {
+      type: String,
+      default: "",
+      validate: {
+        validator: function (v) {
+          return v === "" || /^https?:\/\/.+/.test(v);
+        },
+        message: "Twitter URL must start with http:// or https://",
+      },
+    },
   },
   {
     timestamps: true,
