@@ -2,21 +2,28 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controller/userController');
 
-/**
- * @route   POST /api/users/request-otp
- * @desc    Request OTP for registration
- * @access  Public
- * @body    {email: string, [name: string], [organisation: string], [phone: string], 
- *           [address: string], [city: string], [state: string], [country: string]}
- */
-router.post('/request-otp', userController.requestOTP);
+// Authentication routes
+router.post('/login', userController.login);
+router.delete('/logout/:sessionId', userController.logout); // Changed to DELETE with sessionId
+router.get('/me', userController.getCurrentUser);
 
-/**
- * @route   POST /api/users/verify-otp
- * @desc    Verify OTP and complete registration
- * @access  Public
- * @body    {email: string, otp: string}
- */
+// OTP routes
+router.post('/request-otp', userController.requestOTP);
 router.post('/verify-otp', userController.verifyOTPAndRegister);
+
+// Test route to verify session
+router.get('/test-session', (req, res) => {
+  if (!req.session.views) {
+    req.session.views = 1;
+  } else {
+    req.session.views++;
+  }
+  
+  res.json({
+    sessionId: req.sessionID,
+    views: req.session.views,
+    session: req.session
+  });
+});
 
 module.exports = router;

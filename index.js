@@ -44,19 +44,40 @@ const officeInformationRoutes = require("./routes/officeInformationRoutes");
 const app = express();
 const port = process.env.PORT || 7000;
 
-// Session configuration
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "your-secret-key",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: false, // Allow cookies over HTTP
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    },
+// Session configuration with MongoDB store
+const MongoStore = require('connect-mongo');
+
+// Ensure session secret is set
+if (!process.env.SESSION_SECRET) {
+  console.error('FATAL: SESSION_SECRET is not defined');
+  process.exit(1);
+}
+
+// Configure session store
+const sessionConfig = {
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+    httpOnly: true,
+    maxAge: parseInt(process.env.SESSION_LIFETIME) || 24 * 60 * 60 * 1000, // 24 hours default
+    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax'
+  },
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    collectionName: 'sessions',
+    ttl: parseInt(process.env.SESSION_LIFETIME) / 1000 || 24 * 60 * 60 // Convert to seconds
   })
-);
+};
+
+// Trust first proxy in production
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+  sessionConfig.cookie.secure = true;
+}
+
+app.use(session(sessionConfig));
 
 
 // --- DB connection

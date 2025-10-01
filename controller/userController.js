@@ -168,7 +168,157 @@ const verifyOTPAndRegister = async (req, res) => {
     }
 };
 
+// Login user with email/name and password (simple version for testing)
+const login = async (req, res) => {
+    try {
+        const { identifier, password } = req.body;
+        console.log('Login attempt for:', identifier);
+
+        if (!identifier || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email/Username and password are required'
+            });
+        }
+
+        // Find user by email or name (case-insensitive)
+        const user = await User.findOne({
+            $or: [
+                { email: { $regex: new RegExp('^' + identifier + '$', 'i') } },
+                { name: { $regex: new RegExp('^' + identifier + '$', 'i') } }
+            ]
+        }).select('+password');
+
+        console.log('User found:', user ? 'Yes' : 'No');
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid email/username or password'
+            });
+        }
+
+        // Simple direct password comparison
+        if (user.password !== password) {
+            console.log('Password mismatch. Stored:', user.password, 'Received:', password);
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid email/username or password'
+            });
+        }
+
+        // Set user in session
+        req.session.user = {
+            id: user._id,
+            email: user.email,
+            name: user.name
+        };
+
+        // Remove password from output
+        user.password = undefined;
+
+        res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            user,
+            sessionId: req.sessionID
+        });
+
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error during login',
+            error: error.message
+        });
+    }
+};
+
+// Logout user by session ID
+const logout = (req, res) => {
+    const { sessionId } = req.params;
+    
+    // Check if session ID is provided
+    if (!sessionId) {
+        return res.status(400).json({
+            success: false,
+            message: 'Session ID is required'
+        });
+    }
+
+    // Get the session store
+    const sessionStore = req.sessionStore;
+    
+    // First, check if the session exists
+    sessionStore.get(sessionId, (err, session) => {
+        if (err) {
+            console.error('Error checking session:', err);
+            return res.status(500).json({
+                success: false,
+                message: 'Error checking session',
+                error: process.env.NODE_ENV === 'development' ? err.message : undefined
+            });
+        }
+
+        // If session doesn't exist, return 404
+        if (!session) {
+            return res.status(404).json({
+                success: false,
+                message: 'Session not found',
+                sessionId: sessionId
+            });
+        }
+
+        // Session exists, now destroy it
+        sessionStore.destroy(sessionId, (err) => {
+            if (err) {
+                console.error('Error destroying session:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error logging out',
+                    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+                });
+            }
+            
+            // If we're destroying the current session, clear the cookie
+            if (req.sessionID === sessionId) {
+                res.clearCookie('connect.sid', {
+                    path: '/',
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'lax'
+                });
+            }
+            
+            console.log('Session destroyed:', sessionId);
+            res.status(200).json({
+                success: true,
+                message: 'Session terminated successfully',
+                sessionId: sessionId
+            });
+        });
+    });
+};
+
+// Check if user is authenticated
+const getCurrentUser = (req, res) => {
+    if (req.session.user) {
+        res.status(200).json({
+            success: true,
+            user: req.session.user
+        });
+    } else {
+        res.status(401).json({
+            success: false,
+            message: 'Not authenticated'
+        });
+    }
+};
+
 module.exports = {
     requestOTP,
-    verifyOTPAndRegister
+    verifyOTPAndRegister,
+    login,
+    logout,
+    getCurrentUser
 };
