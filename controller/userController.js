@@ -4,6 +4,7 @@ const crypto = require('crypto');
 
 // In-memory store for OTPs (in production, use Redis or similar)
 const otpStore = new Map();
+const loginOtpStore = new Map();
 
 // Configure nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -315,9 +316,138 @@ const getCurrentUser = (req, res) => {
     }
 };
 
+// Request OTP for login
+const requestLoginOTP = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email is required'
+            });
+        }
+
+        // Check if user exists
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'No user found with this email'
+            });
+        }
+
+        // Generate OTP
+        const otp = generateOTP();
+        const otpExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+
+        // Store OTP
+        loginOtpStore.set(email, {
+            otp,
+            expiry: otpExpiry,
+            userId: user._id
+        });
+
+        // Send OTP to email
+        const emailSent = await sendOTPEmail(email, otp);
+        if (!emailSent) {
+            loginOtpStore.delete(email);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to send OTP'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Login OTP sent successfully',
+            email: email
+        });
+
+    } catch (error) {
+        console.error('Request login OTP error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during login OTP request'
+        });
+    }
+};
+
+// Verify OTP and login user
+const verifyLoginOTP = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email and OTP are required'
+            });
+        }
+
+        // Get stored OTP data
+        const otpData = loginOtpStore.get(email);
+        if (!otpData) {
+            return res.status(400).json({
+                success: false,
+                message: 'OTP expired or invalid'
+            });
+        }
+
+        // Check if OTP is expired
+        if (Date.now() > otpData.expiry) {
+            loginOtpStore.delete(email);
+            return res.status(400).json({
+                success: false,
+                message: 'OTP has expired'
+            });
+        }
+
+        // Verify OTP
+        if (otp !== otpData.otp) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid OTP'
+            });
+        }
+
+        // Get user
+        const user = await User.findById(otpData.userId).select('-password');
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Create session
+        req.session.userId = user._id;
+        const sessionId = req.sessionID;
+
+        // Clear used OTP
+        loginOtpStore.delete(email);
+
+        res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            user: user,
+            sessionId: sessionId
+        });
+
+    } catch (error) {
+        console.error('Verify login OTP error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during OTP verification'
+        });
+    }
+};
+
 module.exports = {
     requestOTP,
     verifyOTPAndRegister,
+    requestLoginOTP,
+    verifyLoginOTP,
     login,
     logout,
     getCurrentUser
