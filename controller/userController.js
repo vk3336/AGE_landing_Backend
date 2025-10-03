@@ -1,6 +1,32 @@
 const User = require('../model/User');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const { cloudinaryServices } = require('../services/cloudinary.service');
+const multer = require('multer');
+const { body, validationResult } = require('express-validator');
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (req, file, cb) => {
+        const filetypes = /jpeg|jpg|png|gif/;
+        const mimetype = filetypes.test(file.mimetype);
+        const extname = filetypes.test(file.originalname.toLowerCase());
+        
+        if (mimetype && extname) {
+            return cb(null, true);
+        }
+        cb(new Error('Only image files (jpeg, jpg, png, gif) are allowed!'));
+    }
+});
+
+// Validation rules for user update
+const validate = [
+    body('name').optional().trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+    body('email').optional().isEmail().withMessage('Please provide a valid email')
+];
 
 // In-memory store for OTPs (in production, use Redis or similar)
 const otpStore = new Map();
@@ -443,20 +469,64 @@ const verifyLoginOTP = async (req, res) => {
     }
 };
 
-// Simple update user method
+// Update user with Cloudinary image upload support
 const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
+        const file = req.file;
+
+        // If there's a file in the request, upload it to Cloudinary
+        if (file) {
+            try {
+                // Upload the new image to Cloudinary
+                const uploadResult = await cloudinaryServices.cloudinaryImageUpload(
+                    file.buffer,
+                    file.originalname,
+                    'userprofile',
+                    true
+                );
+
+                // Add the Cloudinary URL to the updates
+                updates.userImage = uploadResult.secure_url;
+                updates.userImagePublicId = uploadResult.public_id;
+            } catch (uploadError) {
+                console.error('Error uploading image to Cloudinary:', uploadError);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error uploading profile picture',
+                    error: uploadError.message
+                });
+            }
+        }
+
+        // If there's an existing profile picture and it's being updated, delete the old one from Cloudinary
+        if (updates.userImage && updates.userImagePublicId) {
+            try {
+                await cloudinaryServices.cloudinaryImageDelete(updates.userImagePublicId);
+            } catch (deleteError) {
+                console.error('Error deleting old profile picture from Cloudinary:', deleteError);
+                // Continue with the update even if deletion of old image fails
+            }
+        }
 
         // Find and update user
         const user = await User.findByIdAndUpdate(
             id,
-            updates,
+            { $set: updates },
             { new: true, runValidators: true }
         ).select('-password -otp -__v');
 
         if (!user) {
+            // If user not found but we uploaded a new image, clean it up
+            if (updates.userImagePublicId) {
+                try {
+                    await cloudinaryServices.cloudinaryImageDelete(updates.userImagePublicId);
+                } catch (cleanupError) {
+                    console.error('Error cleaning up uploaded image:', cleanupError);
+                }
+            }
+            
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
@@ -542,6 +612,8 @@ const getUserBySession = async (req, res) => {
 };
 
 module.exports = {
+    upload,
+    validate,
     requestOTP,
     verifyOTPAndRegister,
     requestLoginOTP,

@@ -16,7 +16,12 @@ router.post('/request-login-otp', userController.requestLoginOTP);
 router.post('/verify-login-otp', userController.verifyLoginOTP);
 
 // Update user route
-router.put('/:id', userController.updateUser);
+router.put(
+  '/:id',
+  userController.upload.single('userImage'),
+  userController.validate,
+  userController.updateUser
+);
 
 // Get user by session ID
 router.get('/session/:sessionId', userController.getUserBySession);
