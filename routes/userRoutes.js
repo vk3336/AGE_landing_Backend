@@ -7,6 +7,9 @@ router.post('/login', userController.login);
 router.delete('/logout/:sessionId', userController.logout);
 router.get('/me', userController.getCurrentUser);
 
+// Get all users (admin only)
+router.get('/', userController.getAllUsers);
+
 // Registration OTP routes
 router.post('/request-otp', userController.requestOTP);
 router.post('/verify-otp', userController.verifyOTPAndRegister);

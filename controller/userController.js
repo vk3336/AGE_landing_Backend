@@ -611,6 +611,55 @@ const getUserBySession = async (req, res) => {
     }
 };
 
+// Get all users with pagination and search
+const getAllUsers = async (req, res) => {
+    try {
+        // Pagination
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        // Search filter
+        const search = req.query.search || '';
+        const searchQuery = search
+            ? {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } },
+                    { organisation: { $regex: search, $options: 'i' } }
+                ]
+            }
+            : {};
+
+        // Get users with pagination and search
+        const [users, total] = await Promise.all([
+            User.find(searchQuery)
+                .select('-password -otp -__v -userImagePublicId')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit),
+            User.countDocuments(searchQuery)
+        ]);
+
+        res.status(200).json({
+            success: true,
+            count: users.length,
+            total,
+            page,
+            pages: Math.ceil(total / limit),
+            data: users
+        });
+
+    } catch (error) {
+        console.error('Error getting users:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error retrieving users',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     upload,
     validate,
@@ -622,5 +671,6 @@ module.exports = {
     logout,
     getCurrentUser,
     updateUser,
-    getUserBySession
+    getUserBySession,
+    getAllUsers
 };

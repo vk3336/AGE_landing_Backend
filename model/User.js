@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema({
         trim: true,
         required: false
     },
-    textid: {
+    companytaxid: {
         type: String,
         trim: true,
         required: false
