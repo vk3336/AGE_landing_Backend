@@ -43,6 +43,11 @@ const userSchema = new mongoose.Schema({
         trim: true,
         required: false
     },
+    textid: {
+        type: String,
+        trim: true,
+        required: false
+    },
     userImage: {
         type: String,
         default: ''
