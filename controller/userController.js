@@ -443,6 +443,104 @@ const verifyLoginOTP = async (req, res) => {
     }
 };
 
+// Simple update user method
+const updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+
+        // Find and update user
+        const user = await User.findByIdAndUpdate(
+            id,
+            updates,
+            { new: true, runValidators: true }
+        ).select('-password -otp -__v');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'User updated successfully',
+            user
+        });
+
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating user',
+            error: error.message
+        });
+    }
+};
+
+// Get user by session ID
+const getUserBySession = async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        
+        if (!sessionId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Session ID is required'
+            });
+        }
+
+        // In a real application, you would typically use a session store to validate the session
+        // This is a simplified example - in production, use a proper session store like Redis
+        req.sessionStore.get(sessionId, async (err, session) => {
+            if (err || !session) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Session not found or expired'
+                });
+            }
+
+            if (!session.user || !session.user.id) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User session data not found'
+                });
+            }
+
+            try {
+                const user = await User.findById(session.user.id).select('-password -otp -__v');
+                
+                if (!user) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'User not found'
+                    });
+                }
+
+                res.status(200).json({
+                    success: true,
+                    user
+                });
+            } catch (error) {
+                console.error('Error fetching user:', error);
+                res.status(500).json({
+                    success: false,
+                    message: 'Error fetching user details',
+                    error: error.message
+                });
+            }
+        });
+    } catch (error) {
+        console.error('Session validation error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error validating session',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     requestOTP,
     verifyOTPAndRegister,
@@ -450,5 +548,7 @@ module.exports = {
     verifyLoginOTP,
     login,
     logout,
-    getCurrentUser
+    getCurrentUser,
+    updateUser,
+    getUserBySession
 };
