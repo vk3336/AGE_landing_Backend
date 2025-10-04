@@ -645,19 +645,41 @@ const getAllUsers = async (req, res) => {
         const [users, total] = await Promise.all([
             User.find(searchQuery)
                 .select('-password -otp -__v -userImagePublicId')
+                .lean() // Convert to plain JavaScript objects
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
             User.countDocuments(searchQuery)
         ]);
 
+        // Transform user data to ensure proper image URLs
+        const usersWithImageUrls = users.map(user => {
+            // If userImage is already a full URL, use it as is
+            if (user.userImage && (user.userImage.startsWith('http') || user.userImage.startsWith('https'))) {
+                return user;
+            }
+            
+            // If userImage is a path, construct the full URL
+            if (user.userImage) {
+                // Ensure the path starts with a slash
+                const imagePath = user.userImage.startsWith('/') ? user.userImage : `/${user.userImage}`;
+                return {
+                    ...user,
+                    userImage: `${process.env.BASE_URL || 'http://localhost:5000'}${imagePath}`
+                };
+            }
+            
+            // If no userImage, return as is
+            return user;
+        });
+
         res.status(200).json({
             success: true,
-            count: users.length,
+            count: usersWithImageUrls.length,
             total,
             page,
             pages: Math.ceil(total / limit),
-            data: users
+            data: usersWithImageUrls
         });
 
     } catch (error) {
@@ -670,7 +692,132 @@ const getAllUsers = async (req, res) => {
     }
 };
 
-module.exports = {
+// Delete user by ID
+// Delete user's image from Cloudinary and update user record
+const deleteUserImage = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Check if ID is provided
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                message: 'User ID is required'
+            });
+        }
+
+        // Find the user
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Check if user has an image
+        if (!user.userImage) {
+            return res.status(400).json({
+                success: false,
+                message: 'User does not have an image to delete'
+            });
+        }
+
+        // Store the image URL before deletion
+        const oldImageUrl = user.userImage;
+
+        try {
+            // Extract public ID from the image URL
+            const publicId = oldImageUrl.split('/').pop().split('.')[0];
+            
+            // Delete the image from Cloudinary
+            await cloudinaryServices.cloudinaryImageDelete(publicId);
+            
+            // Remove the image reference from the user document
+            user.userImage = '';
+            await user.save();
+
+            res.status(200).json({
+                success: true,
+                message: 'User image deleted successfully',
+                userId: id
+            });
+            
+        } catch (cloudinaryError) {
+            console.error('Error deleting image from Cloudinary:', cloudinaryError);
+            return res.status(500).json({
+                success: false,
+                message: 'Error deleting image from Cloudinary',
+                error: cloudinaryError.message
+            });
+        }
+
+    } catch (error) {
+        console.error('Delete user image error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while deleting user image',
+            error: error.message
+        });
+    }
+};
+
+const deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Check if ID is provided
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                message: 'User ID is required'
+            });
+        }
+
+        // Find the user first to get the image URL
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Delete user image from Cloudinary if it exists
+        if (user.userImage) {
+            try {
+                // Extract public ID from the image URL
+                const publicId = user.userImage.split('/').pop().split('.')[0];
+                
+                // Delete the image from Cloudinary
+                await cloudinaryServices.cloudinaryImageDelete(publicId);
+            } catch (cloudinaryError) {
+                console.error('Error deleting image from Cloudinary:', cloudinaryError);
+                // Continue with user deletion even if image deletion fails
+            }
+        }
+
+        // Delete the user from the database
+        await User.findByIdAndDelete(id);
+
+        res.status(200).json({
+            success: true,
+            message: 'User and associated image deleted successfully',
+            userId: id
+        });
+
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while deleting user',
+            error: error.message
+        });
+    }
+};
+
+// Define all controller methods first
+const userController = {
     upload,
     validate,
     requestOTP,
@@ -679,8 +826,11 @@ module.exports = {
     verifyLoginOTP,
     login,
     logout,
-    getCurrentUser,
     updateUser,
     getUserBySession,
-    getAllUsers
+    getAllUsers,
+    deleteUser,
+    deleteUserImage
 };
+
+module.exports = userController;

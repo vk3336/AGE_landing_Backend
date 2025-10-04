@@ -3,30 +3,36 @@ const router = express.Router();
 const userController = require('../controller/userController');
 
 // Authentication routes
-router.post('/login', userController.login);
-router.delete('/logout/:sessionId', userController.logout);
-router.get('/me', userController.getCurrentUser);
+router.post('/login', (req, res) => userController.login(req, res));
+router.delete('/logout/:sessionId', (req, res) => userController.logout(req, res));
+router.get('/me', (req, res) => userController.getCurrentUser(req, res));
 
 // Get all users (admin only)
-router.get('/', userController.getAllUsers);
+router.get('/', (req, res) => userController.getAllUsers(req, res));
 
 // Registration OTP routes
-router.post('/request-otp', userController.requestOTP);
-router.post('/verify-otp', userController.verifyOTPAndRegister);
+router.post('/request-otp', (req, res) => userController.requestOTP(req, res));
+router.post('/verify-otp', (req, res) => userController.verifyOTPAndRegister(req, res));
 
 // Login with OTP routes
-router.post('/request-login-otp', userController.requestLoginOTP);
-router.post('/verify-login-otp', userController.verifyLoginOTP);
+router.post('/request-login-otp', (req, res) => userController.requestLoginOTP(req, res));
+router.post('/verify-login-otp', (req, res) => userController.verifyLoginOTP(req, res));
 
 // Update user route
 router.put(
   '/:id',
   userController.upload.single('userImage'),
   userController.validate,
-  userController.updateUser
+  (req, res) => userController.updateUser(req, res)
 );
 
 // Get user by session ID
-router.get('/session/:sessionId', userController.getUserBySession);
+router.get('/session/:sessionId', (req, res) => userController.getUserBySession(req, res));
+
+// Delete user by ID
+router.delete('/:id', (req, res) => userController.deleteUser(req, res));
+
+// Delete user's image
+router.delete('/:id/image', (req, res) => userController.deleteUserImage(req, res));
 
 module.exports = router;
