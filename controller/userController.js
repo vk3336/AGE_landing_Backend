@@ -7,18 +7,28 @@ const { body, validationResult } = require('express-validator');
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
+// Parse allowed extensions from environment variable or default to common image formats
+const allowedExtensions = process.env.ALLOWED_IMAGE_EXTENSIONS 
+    ? process.env.ALLOWED_IMAGE_EXTENSIONS.split(',').map(ext => ext.trim().toLowerCase())
+    : ['jpeg', 'jpg', 'png', 'gif'];
+
+// Convert array to regex pattern
+const filetypes = new RegExp(allowedExtensions.join('|'));
+
+// Get max file size from environment variable or default to 5MB
+const maxFileSize = parseInt(process.env.MAX_IMAGE_SIZE) || 5 * 1024 * 1024;
+
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    limits: { fileSize: maxFileSize },
     fileFilter: (req, file, cb) => {
-        const filetypes = /jpeg|jpg|png|gif/;
         const mimetype = filetypes.test(file.mimetype);
-        const extname = filetypes.test(file.originalname.toLowerCase());
+        const extname = filetypes.test(file.originalname.toLowerCase().split('.').pop());
         
         if (mimetype && extname) {
             return cb(null, true);
         }
-        cb(new Error('Only image files (jpeg, jpg, png, gif) are allowed!'));
+        cb(new Error(`Only image files (${allowedExtensions.join(', ')}) are allowed!`));
     }
 });
 
