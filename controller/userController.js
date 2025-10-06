@@ -483,11 +483,57 @@ const verifyLoginOTP = async (req, res) => {
 const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const updates = req.body;
         const file = req.file;
+        // Avoid directly trusting req.body for image fields
+        const updates = { ...req.body };
+        // If no file is provided, ignore any userImage/userImagePublicId coming from body (e.g., base64 previews)
+        if (!file) {
+            delete updates.userImage;
+            delete updates.userImagePublicId;
+        }
+
+        // Load existing user for image operations and validation
+        const existingUser = await User.findById(id).select('userImage userImagePublicId');
+        if (!existingUser) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // If client requests image removal explicitly (without uploading a new file)
+        if (!file && (updates.removeImage === true || updates.removeImage === 'true')) {
+            try {
+                // Prefer stored public id; fallback to folder/filename from URL
+                let publicId = existingUser.userImagePublicId;
+                if (!publicId && existingUser.userImage) {
+                    const urlParts = existingUser.userImage.split('/');
+                    const filename = urlParts[urlParts.length - 1];
+                    const nameWithoutExt = filename.split('.')[0];
+                    publicId = `userprofile/${nameWithoutExt}`;
+                }
+                if (publicId) {
+                    await cloudinaryServices.cloudinaryImageDelete(publicId);
+                }
+            } catch (deleteError) {
+                console.error('Error deleting profile picture from Cloudinary:', deleteError);
+                // Continue; we still clear fields to detach reference
+            }
+
+            updates.userImage = '';
+            updates.userImagePublicId = '';
+        }
 
         // If there's a file in the request, upload it to Cloudinary
+        // Also fetch current user to know previous image public id for safe deletion later
+        let previousPublicId = null;
         if (file) {
+            if (existingUser && existingUser.userImagePublicId) {
+                previousPublicId = existingUser.userImagePublicId;
+            } else if (existingUser && existingUser.userImage) {
+                // Fallback: infer previous public id with folder
+                const urlParts = existingUser.userImage.split('/');
+                const filename = urlParts[urlParts.length - 1];
+                const nameWithoutExt = filename.split('.')[0];
+                previousPublicId = `userprofile/${nameWithoutExt}`;
+            }
             try {
                 // Upload the new image to Cloudinary
                 const uploadResult = await cloudinaryServices.cloudinaryImageUpload(
@@ -510,10 +556,10 @@ const updateUser = async (req, res) => {
             }
         }
 
-        // If there's an existing profile picture and it's being updated, delete the old one from Cloudinary
-        if (updates.userImage && updates.userImagePublicId) {
+        // If we uploaded a new image and we have a previous one, delete the previous one
+        if (file && previousPublicId) {
             try {
-                await cloudinaryServices.cloudinaryImageDelete(updates.userImagePublicId);
+                await cloudinaryServices.cloudinaryImageDelete(previousPublicId);
             } catch (deleteError) {
                 console.error('Error deleting old profile picture from Cloudinary:', deleteError);
                 // Continue with the update even if deletion of old image fails
@@ -652,7 +698,7 @@ const getAllUsers = async (req, res) => {
             User.countDocuments(searchQuery)
         ]);
 
-        // Transform user data to ensure proper image URLs
+        // Transform user data to ensure proper image URLs (Cloudinary URLs left as-is)
         const usersWithImageUrls = users.map(user => {
             // If userImage is already a full URL, use it as is
             if (user.userImage && (user.userImage.startsWith('http') || user.userImage.startsWith('https'))) {
@@ -727,14 +773,22 @@ const deleteUserImage = async (req, res) => {
         const oldImageUrl = user.userImage;
 
         try {
-            // Extract public ID from the image URL
-            const publicId = oldImageUrl.split('/').pop().split('.')[0];
-            
-            // Delete the image from Cloudinary
-            await cloudinaryServices.cloudinaryImageDelete(publicId);
+            // Prefer stored public id; fallback to parsing from URL and include folder
+            let publicId = user.userImagePublicId;
+            if (!publicId && oldImageUrl) {
+                const urlParts = oldImageUrl.split('/');
+                const filename = urlParts[urlParts.length - 1];
+                const nameWithoutExt = filename.split('.')[0];
+                publicId = `userprofile/${nameWithoutExt}`;
+            }
+            // Delete the image from Cloudinary when publicId available
+            if (publicId) {
+                await cloudinaryServices.cloudinaryImageDelete(publicId);
+            }
             
             // Remove the image reference from the user document
             user.userImage = '';
+            user.userImagePublicId = '';
             await user.save();
 
             res.status(200).json({

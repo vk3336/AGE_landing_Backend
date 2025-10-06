@@ -52,6 +52,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    userImagePublicId: {
+        type: String,
+        default: ''
+    },
     city: {
         type: String,
         trim: true,
