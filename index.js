@@ -40,6 +40,7 @@ const contactRoutes = require("./routes/contactRoutes");
 const landingchatRoute = require("./routes/landingchatRoute");
 const aboutUsRoutes = require("./routes/aboutUsRoutes");
 const officeInformationRoutes = require("./routes/officeInformationRoutes");
+const wishlistRoutes = require("./routes/wishlistRoutes");
 
 const app = express();
 const port = process.env.PORT || 7000;
@@ -236,6 +237,7 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/chatbot`, landingchatRoute);
   app.use(`${apiPath}/aboutus`, aboutUsRoutes);
   app.use(`${apiPath}/officeinformation`, officeInformationRoutes);
+  app.use(`${apiPath}/wishlist`, wishlistRoutes);
   app.use(`${apiPath}/db`, dbRoutes);
 };
 
