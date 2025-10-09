@@ -74,6 +74,11 @@ const userSchema = new mongoose.Schema({
     pincode: {
         type: String,
         trim: true
+    },
+    invalidUser: {
+        type: String,
+        enum: ['yes', 'no'],
+        default: 'no'
     }
 }, {
     timestamps: true

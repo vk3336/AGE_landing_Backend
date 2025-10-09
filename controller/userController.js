@@ -364,12 +364,20 @@ const requestLoginOTP = async (req, res) => {
             });
         }
 
-        // Check if user exists
+        // Check if user exists and is not invalid
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(404).json({
                 success: false,
                 message: 'No user found with this email'
+            });
+        }
+
+        // Check if user is marked as invalid at OTP request time
+        if (user.invalidUser === 'yes') {
+            return res.status(403).json({
+                success: false,
+                message: 'This account has been deactivated. Please contact support for assistance.'
             });
         }
 
@@ -453,6 +461,14 @@ const verifyLoginOTP = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
+            });
+        }
+
+        // Check if user is marked as invalid
+        if (user.invalidUser === 'yes') {
+            return res.status(403).json({
+                success: false,
+                message: 'This account has been deactivated. Please contact support for assistance.'
             });
         }
 
