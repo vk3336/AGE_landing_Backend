@@ -621,63 +621,40 @@ const updateUser = async (req, res) => {
     }
 };
 
-// Get user by session ID
-const getUserBySession = async (req, res) => {
+
+
+
+// Get user by ID
+const getUserById = async (req, res) => {
     try {
-        const { sessionId } = req.params;
-        
-        if (!sessionId) {
+        const { id } = req.params;
+
+        if (!id) {
             return res.status(400).json({
                 success: false,
-                message: 'Session ID is required'
+                message: 'User ID is required'
             });
         }
 
-        // In a real application, you would typically use a session store to validate the session
-        // This is a simplified example - in production, use a proper session store like Redis
-        req.sessionStore.get(sessionId, async (err, session) => {
-            if (err || !session) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Session not found or expired'
-                });
-            }
+        const user = await User.findById(id).select('-password -otp -otpExpires -sessions');
 
-            if (!session.user || !session.user.id) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'User session data not found'
-                });
-            }
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
 
-            try {
-                const user = await User.findById(session.user.id).select('-password -otp -__v');
-                
-                if (!user) {
-                    return res.status(404).json({
-                        success: false,
-                        message: 'User not found'
-                    });
-                }
-
-                res.status(200).json({
-                    success: true,
-                    user
-                });
-            } catch (error) {
-                console.error('Error fetching user:', error);
-                res.status(500).json({
-                    success: false,
-                    message: 'Error fetching user details',
-                    error: error.message
-                });
-            }
+        res.status(200).json({
+            success: true,
+            user
         });
+
     } catch (error) {
-        console.error('Session validation error:', error);
+        console.error('Get user by ID error:', error);
         res.status(500).json({
             success: false,
-            message: 'Error validating session',
+            message: 'Error retrieving user',
             error: error.message
         });
     }
@@ -897,7 +874,7 @@ const userController = {
     login,
     logout,
     updateUser,
-    getUserBySession,
+    getUserById,
     getAllUsers,
     deleteUser,
     deleteUserImage

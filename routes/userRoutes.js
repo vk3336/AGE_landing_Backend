@@ -5,10 +5,13 @@ const userController = require('../controller/userController');
 // Authentication routes
 router.post('/login', (req, res) => userController.login(req, res));
 router.delete('/logout/:sessionId', (req, res) => userController.logout(req, res));
-router.get('/me', (req, res) => userController.getCurrentUser(req, res));
 
 // Get all users (admin only)
 router.get('/', (req, res) => userController.getAllUsers(req, res));
+
+
+// Get user by ID
+router.get('/:id', (req, res) => userController.getUserById(req, res));
 
 // Registration OTP routes
 router.post('/request-otp', (req, res) => userController.requestOTP(req, res));
@@ -25,9 +28,6 @@ router.put(
   userController.validate,
   (req, res) => userController.updateUser(req, res)
 );
-
-// Get user by session ID
-router.get('/session/:sessionId', (req, res) => userController.getUserBySession(req, res));
 
 // Delete user by ID
 router.delete('/:id', (req, res) => userController.deleteUser(req, res));
