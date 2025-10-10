@@ -14,4 +14,7 @@ router.put('/:userId', wishlistController.updateWishlist);
 // Delete wishlist
 router.delete('/:userId', wishlistController.deleteWishlist);
 
+// Remove product from wishlist
+router.delete('/:userId/product/:productId', wishlistController.removeFromWishlist);
+
 module.exports = router;

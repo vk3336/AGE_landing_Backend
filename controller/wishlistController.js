@@ -115,9 +115,51 @@ const deleteWishlist = async (req, res) => {
     }
 };
 
+// Remove product from wishlist
+const removeFromWishlist = async (req, res) => {
+    try {
+        const { userId, productId } = req.params;
+        
+        if (!userId || !productId) {
+            return res.status(400).json({ success: false, message: 'User ID and Product ID are required' });
+        }
+
+        const wishlist = await Wishlist.findOne({ userId });
+
+        if (!wishlist) {
+            return res.status(404).json({ success: false, message: 'Wishlist not found' });
+        }
+
+        // Check if product exists in wishlist
+        const productIndex = wishlist.productIds.indexOf(productId);
+        if (productIndex === -1) {
+            return res.status(404).json({ success: false, message: 'Product not found in wishlist' });
+        }
+
+        // Remove the product from the array
+        wishlist.productIds.splice(productIndex, 1);
+        
+        // Save the updated wishlist
+        const updatedWishlist = await wishlist.save();
+        
+        // Populate the product details for the response
+        const populatedWishlist = await Wishlist.findById(updatedWishlist._id)
+            .populate('productIds', 'name price images');
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Product removed from wishlist',
+            data: populatedWishlist
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
 module.exports = {
     addToWishlist,
     getWishlist,
     updateWishlist,
-    deleteWishlist
+    deleteWishlist,
+    removeFromWishlist
 };
