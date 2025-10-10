@@ -35,4 +35,5 @@ router.delete('/:id', (req, res) => userController.deleteUser(req, res));
 // Delete user's image
 router.delete('/:id/image', (req, res) => userController.deleteUserImage(req, res));
 
+
 module.exports = router;

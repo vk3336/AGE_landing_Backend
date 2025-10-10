@@ -475,7 +475,7 @@ const verifyLoginOTP = async (req, res) => {
         // Create session
         req.session.userId = user._id;
         const sessionId = req.sessionID;
-
+        
         // Clear used OTP
         loginOtpStore.delete(email);
 
@@ -483,7 +483,10 @@ const verifyLoginOTP = async (req, res) => {
             success: true,
             message: 'Login successful',
             user: user,
-            sessionId: sessionId
+            session: {
+                id: sessionId,
+                userId: user._id.toString()
+            }
         });
 
     } catch (error) {
