@@ -143,16 +143,6 @@ const seoSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
-    googleSiteVerification: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    msValidate: {
-      type: String,
-      required: false,
-      trim: true,
-    },
     themeColor: {
       type: String,
       required: false,
@@ -223,11 +213,6 @@ const seoSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
-    x_default: {
-      type: String,
-      required: false,
-      trim: true,
-    },
     author_name: {
       type: String,
       required: false,
@@ -284,12 +269,7 @@ const seoSchema = new mongoose.Schema(
     },
     VideoJsonLd: { type: String, trim: true },
 
-    LogoJsonLd: { type: String, trim: true },
-    LogoJsonLdcontext: { type: String, trim: true },
-    LogoJsonLdtype: { type: String, trim: true },
-    logoJsonLdurl: { type: String, trim: true },
-    logoJsonLdwidth: { type: String, trim: true },
-    logoJsonLdheight: { type: String, trim: true },
+    // LogoJsonLd fields removed
 
     BreadcrumbJsonLd: { type: String, trim: true },
     BreadcrumbJsonLdtype: { type: String, trim: true },
@@ -300,26 +280,6 @@ const seoSchema = new mongoose.Schema(
     BreadcrumbJsonLditemListElementitem: { type: String, trim: true },
     BreadcrumbJsonLditemListElementname: { type: String, trim: true },
     BreadcrumbJsonLditemListElementposition: { type: String, trim: true },
-
-    LocalBusinessJsonLd: { type: String, trim: true },
-    LocalBusinessJsonLdtype: { type: String, trim: true },
-    LocalBusinessJsonLdcontext: { type: String, trim: true },
-    LocalBusinessJsonLdname: { type: String, trim: true },
-    LocalBusinessJsonLdtelephone: { type: String, trim: true },
-    LocalBusinessJsonLdareaserved: { type: String, trim: true },
-
-    LocalBusinessJsonLdaddress: { type: String, trim: true },
-    LocalBusinessJsonLdaddresstype: { type: String, trim: true },
-    LocalBusinessJsonLdaddressstreetAddress: { type: String, trim: true },
-    LocalBusinessJsonLdaddressaddressLocality: { type: String, trim: true },
-    LocalBusinessJsonLdaddressaddressRegion: { type: String, trim: true },
-    LocalBusinessJsonLdaddresspostalCode: { type: String, trim: true },
-    LocalBusinessJsonLdaddressaddressCountry: { type: String, trim: true },
-
-    LocalBusinessJsonLdgeo: { type: String, trim: true },
-    LocalBusinessJsonLdgeotype: { type: String, trim: true },
-    LocalBusinessJsonLdgeolatitude: { type: String, trim: true },
-    LocalBusinessJsonLdgeolongitude: { type: String, trim: true },
   },
   { timestamps: true }
 );

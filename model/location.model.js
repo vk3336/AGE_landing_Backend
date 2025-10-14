@@ -39,7 +39,27 @@ const locationSchema = new mongoose.Schema({
         type: String,
         trim: true,
         default: 'en' // Default to English
-    }
+    },
+
+    LocalBusinessJsonLd: { type: String, trim: true },
+    LocalBusinessJsonLdtype: { type: String, trim: true },
+    LocalBusinessJsonLdcontext: { type: String, trim: true },
+    LocalBusinessJsonLdname: { type: String, trim: true },
+    LocalBusinessJsonLdtelephone: { type: String, trim: true },
+    LocalBusinessJsonLdareaserved: { type: String, trim: true },
+
+    LocalBusinessJsonLdaddress: { type: String, trim: true },
+    LocalBusinessJsonLdaddresstype: { type: String, trim: true },
+    LocalBusinessJsonLdaddressstreetAddress: { type: String, trim: true },
+    LocalBusinessJsonLdaddressaddressLocality: { type: String, trim: true },
+    LocalBusinessJsonLdaddressaddressRegion: { type: String, trim: true },
+    LocalBusinessJsonLdaddresspostalCode: { type: String, trim: true },
+    LocalBusinessJsonLdaddressaddressCountry: { type: String, trim: true },
+
+    LocalBusinessJsonLdgeo: { type: String, trim: true },
+    LocalBusinessJsonLdgeotype: { type: String, trim: true },
+    LocalBusinessJsonLdgeolatitude: { type: String, trim: true },
+    LocalBusinessJsonLdgeolongitude: { type: String, trim: true },
 }, {
     timestamps: true,
     toJSON: { virtuals: true },

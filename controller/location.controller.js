@@ -19,19 +19,63 @@ exports.searchLocations = async (req, res, next) => {
 // Create a new location
 exports.createLocation = async (req, res) => {
   try {
-    const { name, pincode, country, state, city, slug, timezone, language } =
-      req.body;
+    const { 
+  name, 
+  pincode, 
+  country, 
+  state, 
+  city, 
+  slug, 
+  timezone, 
+  language,
+  // Add the new fields
+  LocalBusinessJsonLd,
+  LocalBusinessJsonLdtype,
+  LocalBusinessJsonLdcontext,
+  LocalBusinessJsonLdname,
+  LocalBusinessJsonLdtelephone,
+  LocalBusinessJsonLdareaserved,
+  LocalBusinessJsonLdaddress,
+  LocalBusinessJsonLdaddresstype,
+  LocalBusinessJsonLdaddressstreetAddress,
+  LocalBusinessJsonLdaddressaddressLocality,
+  LocalBusinessJsonLdaddressaddressRegion,
+  LocalBusinessJsonLdaddresspostalCode,
+  LocalBusinessJsonLdaddressaddressCountry,
+  LocalBusinessJsonLdgeo,
+  LocalBusinessJsonLdgeotype,
+  LocalBusinessJsonLdgeolatitude,
+  LocalBusinessJsonLdgeolongitude
+} = req.body;
 
-    const location = await Location.create({
-      name,
-      pincode,
-      country,
-      state,
-      city,
-      ...(slug && { slug }), // Include slug if provided
-      ...(timezone && { timezone }), // Include timezone if provided
-      ...(language && { language }), // Include language if provided
-    });
+const location = await Location.create({
+  name,
+  pincode,
+  country,
+  state,
+  city,
+  slug,
+  timezone,
+  language,
+  // Add the new fields
+  LocalBusinessJsonLd,
+  LocalBusinessJsonLdtype,
+  LocalBusinessJsonLdcontext,
+  LocalBusinessJsonLdname,
+  LocalBusinessJsonLdtelephone,
+  LocalBusinessJsonLdareaserved,
+  LocalBusinessJsonLdaddress,
+  LocalBusinessJsonLdaddresstype,
+  LocalBusinessJsonLdaddressstreetAddress,
+  LocalBusinessJsonLdaddressaddressLocality,
+  LocalBusinessJsonLdaddressaddressRegion,
+  LocalBusinessJsonLdaddresspostalCode,
+  LocalBusinessJsonLdaddressaddressCountry,
+  LocalBusinessJsonLdgeo,
+  LocalBusinessJsonLdgeotype,
+  LocalBusinessJsonLdgeolatitude,
+  LocalBusinessJsonLdgeolongitude
+});
 
     res.status(201).json({
       status: "success",
@@ -141,12 +185,12 @@ exports.findBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
 
-    const area = await Area.findOne({ slug });
+    const location = await Location.findOne({ slug });
 
-    if (!area) {
+    if (!location) {
       return res.status(404).json({
         status: "error",
-        message: "No area found with that slug",
+        message: "No location found with that slug",
       });
     }
 
@@ -168,20 +212,63 @@ exports.findBySlug = async (req, res) => {
 exports.updateLocation = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, pincode, country, state, city, slug, timezone, language } =
-      req.body;
+    const { 
+      name, 
+      pincode, 
+      country, 
+      state, 
+      city, 
+      slug, 
+      timezone, 
+      language,
+      // Add the new fields
+      LocalBusinessJsonLd,
+      LocalBusinessJsonLdtype,
+      LocalBusinessJsonLdcontext,
+      LocalBusinessJsonLdname,
+      LocalBusinessJsonLdtelephone,
+      LocalBusinessJsonLdareaserved,
+      LocalBusinessJsonLdaddress,
+      LocalBusinessJsonLdaddresstype,
+      LocalBusinessJsonLdaddressstreetAddress,
+      LocalBusinessJsonLdaddressaddressLocality,
+      LocalBusinessJsonLdaddressaddressRegion,
+      LocalBusinessJsonLdaddresspostalCode,
+      LocalBusinessJsonLdaddressaddressCountry,
+      LocalBusinessJsonLdgeo,
+      LocalBusinessJsonLdgeotype,
+      LocalBusinessJsonLdgeolatitude,
+      LocalBusinessJsonLdgeolongitude
+    } = req.body;
 
-    // Prepare update object with only the fields that are provided
-    const updateData = {};
-    if (name) updateData.name = name;
-    if (pincode) updateData.pincode = pincode;
-    if (country) updateData.country = country;
-    if (state) updateData.state = state;
-    if (city) updateData.city = city;
-    if (slug) updateData.slug = slug;
-    if (timezone) updateData.timezone = timezone;
-    if (language) updateData.language = language;
-
+// Prepare update object with only the fields that are provided
+const updateData = {};
+if (name) updateData.name = name;
+if (pincode) updateData.pincode = pincode;
+if (country) updateData.country = country;
+if (state) updateData.state = state;
+if (city) updateData.city = city;
+if (slug) updateData.slug = slug;
+if (timezone) updateData.timezone = timezone;
+if (language) updateData.language = language;
+// Add the new fields
+if (LocalBusinessJsonLd !== undefined) updateData.LocalBusinessJsonLd = LocalBusinessJsonLd;
+if (LocalBusinessJsonLdtype !== undefined) updateData.LocalBusinessJsonLdtype = LocalBusinessJsonLdtype;
+if (LocalBusinessJsonLdcontext !== undefined) updateData.LocalBusinessJsonLdcontext = LocalBusinessJsonLdcontext;
+if (LocalBusinessJsonLdname !== undefined) updateData.LocalBusinessJsonLdname = LocalBusinessJsonLdname;
+if (LocalBusinessJsonLdtelephone !== undefined) updateData.LocalBusinessJsonLdtelephone = LocalBusinessJsonLdtelephone;
+if (LocalBusinessJsonLdareaserved !== undefined) updateData.LocalBusinessJsonLdareaserved = LocalBusinessJsonLdareaserved;
+if (LocalBusinessJsonLdaddress !== undefined) updateData.LocalBusinessJsonLdaddress = LocalBusinessJsonLdaddress;
+if (LocalBusinessJsonLdaddresstype !== undefined) updateData.LocalBusinessJsonLdaddresstype = LocalBusinessJsonLdaddresstype;
+if (LocalBusinessJsonLdaddressstreetAddress !== undefined) updateData.LocalBusinessJsonLdaddressstreetAddress = LocalBusinessJsonLdaddressstreetAddress;
+if (LocalBusinessJsonLdaddressaddressLocality !== undefined) updateData.LocalBusinessJsonLdaddressaddressLocality = LocalBusinessJsonLdaddressaddressLocality;
+if (LocalBusinessJsonLdaddressaddressRegion !== undefined) updateData.LocalBusinessJsonLdaddressaddressRegion = LocalBusinessJsonLdaddressaddressRegion;
+if (LocalBusinessJsonLdaddresspostalCode !== undefined) updateData.LocalBusinessJsonLdaddresspostalCode = LocalBusinessJsonLdaddresspostalCode;
+if (LocalBusinessJsonLdaddressaddressCountry !== undefined) updateData.LocalBusinessJsonLdaddressaddressCountry = LocalBusinessJsonLdaddressaddressCountry;
+if (LocalBusinessJsonLdgeo !== undefined) updateData.LocalBusinessJsonLdgeo = LocalBusinessJsonLdgeo;
+if (LocalBusinessJsonLdgeotype !== undefined) updateData.LocalBusinessJsonLdgeotype = LocalBusinessJsonLdgeotype;
+if (LocalBusinessJsonLdgeolatitude !== undefined) updateData.LocalBusinessJsonLdgeolatitude = LocalBusinessJsonLdgeolatitude;
+if (LocalBusinessJsonLdgeolongitude !== undefined) updateData.LocalBusinessJsonLdgeolongitude = LocalBusinessJsonLdgeolongitude;
     const location = await Location.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,

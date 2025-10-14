@@ -181,6 +181,26 @@ const staticSeoSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
+    LogoJsonLdcontext: { 
+      type: String, 
+      trim: true 
+    },
+    LogoJsonLdtype: { 
+      type: String, 
+      trim: true 
+    },
+    logoJsonLdurl: { 
+      type: String, 
+      trim: true 
+    },
+    logoJsonLdwidth: { 
+      type: String, 
+      trim: true 
+    },
+    logoJsonLdheight: { 
+      type: String, 
+      trim: true 
+    },
     BreadcrumbJsonLd: {
       type: String,
       trim: true
