@@ -39,7 +39,7 @@ const getWishlist = async (req, res) => {
         const { userId } = req.params;
         
         const wishlist = await Wishlist.findOne({ userId })
-            .populate('productIds', 'name price images')
+            .populate('productIds')
             .lean();
 
         if (!wishlist) {
