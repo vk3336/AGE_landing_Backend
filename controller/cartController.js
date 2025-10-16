@@ -117,7 +117,7 @@ const getCartByUserId = async (req, res) => {
         const { userId } = req.params;
 
         const cartItems = await Cart.find({ userId })
-            .populate('productId', 'name price image')
+            .populate('productId')
             .lean();
 
         // Calculate total price
