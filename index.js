@@ -42,6 +42,7 @@ const aboutUsRoutes = require("./routes/aboutUsRoutes");
 const officeInformationRoutes = require("./routes/officeInformationRoutes");
 const wishlistRoutes = require("./routes/wishlistRoutes");
 const cartRoutes = require("./routes/cartRoutes");
+const orderRoutes = require("./routes/orderRoutes");
 
 const app = express();
 const port = process.env.PORT || 7000;
@@ -240,6 +241,7 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/officeinformation`, officeInformationRoutes);
   app.use(`${apiPath}/wishlist`, wishlistRoutes);
   app.use(`${apiPath}/cart`, cartRoutes);
+  app.use(`${apiPath}/orders`, orderRoutes);
   app.use(`${apiPath}/db`, dbRoutes);
 };
 
