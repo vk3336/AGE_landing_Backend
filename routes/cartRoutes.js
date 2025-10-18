@@ -5,7 +5,8 @@ const {
     updateCartItem, 
     removeFromCart, 
     clearCart, 
-    getCartByUserId 
+    getCartByUserId,
+    getCartItemByProductId
 } = require('../controller/cartController');
 
 // Add item to cart
@@ -22,5 +23,9 @@ router.delete('/clear', clearCart);
 
 // Get user's cart
 router.get('/user/:userId', getCartByUserId);
+
+// Get cart product by product ID (optionally filtered by user)
+// Example: /product/123?userId=456
+router.get('/product/:productId', getCartItemByProductId);
 
 module.exports = router;
