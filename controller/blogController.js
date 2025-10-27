@@ -4,6 +4,7 @@ const { validationResult } = require("express-validator");
 const { cloudinaryServices } = require("../services/cloudinary.service.js");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
+const cloudinary = require("cloudinary").v2;
 
 // Upload image to Cloudinary
 const uploadImage = async (file, folder = 'blog-images') => {
@@ -84,6 +85,22 @@ const getBlogById = async (req, res) => {
     }
 };
 
+// Helper function to delete an image from Cloudinary
+const deleteImageFromCloudinary = async (imageUrl) => {
+    if (!imageUrl) return;
+    
+    try {
+        // Extract public ID from the URL
+        const urlParts = imageUrl.split('/');
+        const filename = urlParts[urlParts.length - 1];
+        const publicId = `blog-images/${filename.split('.')[0]}`; // Include 'blog-images' folder
+        await cloudinary.uploader.destroy(publicId);
+    } catch (error) {
+        console.error('Error deleting image from Cloudinary:', error);
+        // Don't throw the error to prevent the main operation from failing
+    }
+};
+
 // Update blog
 const updateBlog = async (req, res) => {
     const errors = validationResult(req);
@@ -92,7 +109,7 @@ const updateBlog = async (req, res) => {
     }
     
     try {
-        const { title, author, heading, paragraph1, paragraph2, paragraph3 } = req.body;
+        const { title, author, heading, paragraph1, paragraph2, paragraph3, deleteImage1, deleteImage2 } = req.body;
         const updateData = { 
             title, 
             author, 
@@ -103,25 +120,48 @@ const updateBlog = async (req, res) => {
             updatedAt: Date.now() 
         };
 
-        // Handle image uploads if new images are provided (in parallel)
-        const imageUpdates = [];
+        // Get the current blog to check for existing images
+        const currentBlog = await Blog.findById(req.params.id);
+        if (!currentBlog) {
+            return res.status(404).json({ success: false, error: 'Blog not found' });
+        }
+
+        // Handle image deletions
+        const deletionPromises = [];
+        if (deleteImage1 === 'true' && currentBlog.blogimage1) {
+            // Delete the old image from Cloudinary
+            await deleteImageFromCloudinary(currentBlog.blogimage1);
+            updateData.blogimage1 = null;
+        }
+        if (deleteImage2 === 'true' && currentBlog.blogimage2) {
+            // Delete the old image from Cloudinary
+            await deleteImageFromCloudinary(currentBlog.blogimage2);
+            updateData.blogimage2 = null;
+        }
+
+        // Handle new image uploads
+        const uploadPromises = [];
         if (req.files && req.files['blogimage1']) {
-            imageUpdates.push(
-                uploadImage(req.files['blogimage1'][0]).then(url => {
-                    updateData.blogimage1 = url;
-                })
-            );
+            // If there's an existing image and we're not already deleting it, delete it
+            if (currentBlog.blogimage1 && deleteImage1 !== 'true') {
+                await deleteImageFromCloudinary(currentBlog.blogimage1);
+            }
+            // Upload the new image
+            const url = await uploadImage(req.files['blogimage1'][0]);
+            updateData.blogimage1 = url;
         }
         if (req.files && req.files['blogimage2']) {
-            imageUpdates.push(
-                uploadImage(req.files['blogimage2'][0]).then(url => {
-                    updateData.blogimage2 = url;
-                })
-            );
+            // If there's an existing image and we're not already deleting it, delete it
+            if (currentBlog.blogimage2 && deleteImage2 !== 'true') {
+                await deleteImageFromCloudinary(currentBlog.blogimage2);
+            }
+            // Upload the new image
+            const url = await uploadImage(req.files['blogimage2'][0]);
+            updateData.blogimage2 = url;
         }
         
-        // Wait for all image uploads to complete
-        await Promise.all(imageUpdates);
+        // Wait for any remaining upload operations to complete
+        await Promise.all(uploadPromises);
         
         const blog = await Blog.findByIdAndUpdate(
             req.params.id,
@@ -146,11 +186,20 @@ const updateBlog = async (req, res) => {
 // Delete blog
 const deleteBlog = async (req, res) => {
     try {
-        const blog = await Blog.findByIdAndDelete(req.params.id);
+        const blog = await Blog.findById(req.params.id);
         
         if (!blog) {
             return res.status(404).json({ success: false, error: 'Blog not found' });
         }
+
+        // Delete associated images from Cloudinary
+        await Promise.all([
+            deleteImageFromCloudinary(blog.blogimage1),
+            deleteImageFromCloudinary(blog.blogimage2)
+        ]);
+
+        // Delete the blog from database
+        await Blog.findByIdAndDelete(req.params.id);
 
         res.status(200).json({ success: true, data: {} });
     } catch (error) {
