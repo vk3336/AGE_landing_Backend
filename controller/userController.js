@@ -34,7 +34,8 @@ const upload = multer({
 
 // Validation rules for user update
 const validate = [
-    body('name').optional().trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+    body('firstName').optional().trim().isLength({ min: 2 }).withMessage('First name must be at least 2 characters'),
+    body('lastName').optional().trim().isLength({ min: 1 }).withMessage('Last name is required'),
     body('email').optional().isEmail().withMessage('Please provide a valid email')
 ];
 
@@ -218,11 +219,11 @@ const login = async (req, res) => {
             });
         }
 
-        // Find user by email or name (case-insensitive)
+        // Find user by email or firstName (case-insensitive)
         const user = await User.findOne({
             $or: [
                 { email: { $regex: new RegExp('^' + identifier + '$', 'i') } },
-                { name: { $regex: new RegExp('^' + identifier + '$', 'i') } }
+                { firstName: { $regex: new RegExp('^' + identifier + '$', 'i') } }
             ]
         }).select('+password');
 
@@ -248,7 +249,8 @@ const login = async (req, res) => {
         req.session.user = {
             id: user._id,
             email: user.email,
-            name: user.name
+            firstName: user.firstName,
+            lastName: user.lastName
         };
 
         // Remove password from output
@@ -676,7 +678,8 @@ const getAllUsers = async (req, res) => {
         const searchQuery = search
             ? {
                 $or: [
-                    { name: { $regex: search, $options: 'i' } },
+                    { firstName: { $regex: search, $options: 'i' } },
+                    { lastName: { $regex: search, $options: 'i' } },
                     { email: { $regex: search, $options: 'i' } },
                     { organisation: { $regex: search, $options: 'i' } }
                 ]
