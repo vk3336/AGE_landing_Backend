@@ -44,6 +44,7 @@ const wishlistRoutes = require("./routes/wishlistRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 
+const blogRoutes = require("./routes/blogRoutes");
 const app = express();
 const port = process.env.PORT || 7000;
 
@@ -243,6 +244,7 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/cart`, cartRoutes);
   app.use(`${apiPath}/orders`, orderRoutes);
   app.use(`${apiPath}/db`, dbRoutes);
+  app.use(`${apiPath}/blogs`, blogRoutes);
 };
 
 // --- Register routes for each base path (e.g., /api)
