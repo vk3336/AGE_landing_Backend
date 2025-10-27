@@ -30,6 +30,16 @@ const blogSchema = new mongoose.Schema({
         type: String,
         trim: true,
         required: false
+    },
+    blogimage1: {
+        type: String,
+        trim: true,
+        required: false
+    },
+    blogimage2: {
+        type: String,
+        trim: true,
+        required: false
     }
 }, {
     timestamps: true
