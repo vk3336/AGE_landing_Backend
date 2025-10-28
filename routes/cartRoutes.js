@@ -19,7 +19,7 @@ router.put('/update/:productId', updateCartItem);
 router.delete('/remove/:productId', removeFromCart);
 
 // Clear user's cart
-router.delete('/clear', clearCart);
+router.delete('/clear/:userId', clearCart);
 
 // Get user's cart
 router.get('/user/:userId', getCartByUserId);

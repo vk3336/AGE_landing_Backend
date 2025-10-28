@@ -95,7 +95,14 @@ const removeFromCart = async (req, res) => {
 // Clear user's cart
 const clearCart = async (req, res) => {
     try {
-        const { userId } = req.body;
+        const { userId } = req.params;
+        
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'User ID is required'
+            });
+        }
         
         await Cart.deleteMany({ userId });
 
