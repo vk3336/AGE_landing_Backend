@@ -20,21 +20,6 @@ router.get("/public", productController.getAllProductsExceptVendor);
 // View product by slug without vendor information
 router.get("/public/slug/:slug", productController.getPublicProductBySlug);
 
-// View product by ID
-router.get("/:id", productController.viewById);
-
-// Update product
-router.put(
-  "/:id",
-  productController.multiUpload,
-  productController.handleColorArray,
-  productController.validate,
-  productController.update
-);
-
-// Delete product
-router.delete("/:id", productController.deleteById);
-
 // SEARCH PRODUCTS BY NAME
 router.get("/search/:q", productController.searchProducts);
 
@@ -74,13 +59,40 @@ router.get("/cm/:value", productController.getProductsByCmValue);
 // GET PRODUCTS BY QUANTITY RANGE
 router.get(
   "/quantity/:value",
-  require("../controller/productController").getProductsByQuantityValue
+  productController.getProductsByQuantityValue
 );
 
 // GET PRODUCT BY SLUG
 router.get("/slug/:slug", productController.getProductBySlug);
 
+// GET POPULAR PRODUCTS
+router.get("/popular", productController.getPopularProducts);
+
+// GET TOP RATED PRODUCTS
+router.get("/top-rated", productController.getTopRatedProducts);
+
+// GET LANDING PAGE PRODUCTS
+router.get("/landing-page", productController.getLandingPageProducts);
+
+// GET SHOPY PRODUCTS
+router.get("/shopy", productController.getShopyProducts);
+
 // DELETE PRODUCT IMAGE
 router.delete("/image/:id/:imageName", productController.deleteProductImage);
+
+// Update product
+router.put(
+  "/:id",
+  productController.multiUpload,
+  productController.handleColorArray,
+  productController.validate,
+  productController.update
+);
+
+// Delete product
+router.delete("/:id", productController.deleteById);
+
+// View product by ID (this should be the last route as it's a catch-all for IDs)
+router.get("/:id", productController.viewById);
 
 module.exports = router;

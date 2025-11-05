@@ -1228,6 +1228,172 @@ const getPublicProductBySlug = async (req, res, next) => {
   }
 };
 
+// Get popular products
+const getPopularProducts = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      Product.find({ 
+        popularproduct: true,
+        status: { $ne: 'inactive' } 
+      })
+        .select('-__v -createdAt -updatedAt')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Product.countDocuments({ 
+        popularproduct: true,
+        status: { $ne: 'inactive' } 
+      })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      data: products
+    });
+  } catch (error) {
+    console.error("Error fetching popular products:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching popular products",
+      error: error.message,
+    });
+  }
+};
+
+// Get top rated products
+const getTopRatedProducts = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      Product.find({ 
+        topratedproduct: true,
+        status: { $ne: 'inactive' },
+        rating_value: { $gte: 4 }
+      })
+        .select('-__v -createdAt -updatedAt')
+        .sort({ rating_value: -1, rating_count: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Product.countDocuments({ 
+        topratedproduct: true,
+        status: { $ne: 'inactive' },
+        rating_value: { $gte: 4 }
+      })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      data: products
+    });
+  } catch (error) {
+    console.error("Error fetching top rated products:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching top rated products",
+      error: error.message,
+    });
+  }
+};
+
+// Get landing page products
+const getLandingPageProducts = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      Product.find({ 
+        landingPageProduct: true,
+        status: { $ne: 'inactive' } 
+      })
+        .select('-__v -createdAt -updatedAt')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Product.countDocuments({ 
+        landingPageProduct: true,
+        status: { $ne: 'inactive' } 
+      })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      data: products
+    });
+  } catch (error) {
+    console.error("Error fetching landing page products:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching landing page products",
+      error: error.message,
+    });
+  }
+};
+
+// Get shopy products
+const getShopyProducts = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      Product.find({ 
+        shopyProduct: true,
+        status: { $ne: 'inactive' } 
+      })
+        .select('-__v -createdAt -updatedAt')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Product.countDocuments({ 
+        shopyProduct: true,
+        status: { $ne: 'inactive' } 
+      })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      data: products
+    });
+  } catch (error) {
+    console.error("Error fetching shopy products:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching shopy products",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   upload,
   multiUpload,
@@ -1254,72 +1420,77 @@ module.exports = {
   getProductBySlug,
   getAllProductsExceptVendor,
   getPublicProductBySlug,
+  getPopularProducts,
+  getTopRatedProducts,
+  getLandingPageProducts,
+  getShopyProducts,
+  deleteProductImage
+};
 
-  // DELETE PRODUCT IMAGE
-  async deleteProductImage(req, res) {
-    try {
-      const { id, imageName } = req.params;
+// DELETE PRODUCT IMAGE
+async function deleteProductImage(req, res) {
+  try {
+    const { id, imageName } = req.params;
 
-      // Find the product
-      const product = await Product.findById(id);
-      if (!product) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Product not found" });
-      }
+    // Find the product
+    const product = await Product.findById(id);
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
 
-      // Determine which image field contains the image to delete
-      const imageFields = ["img", "image1", "image2"];
-      let imageDeleted = false;
+    // Determine which image field contains the image to delete
+    const imageFields = ["img", "image1", "image2"];
+    let imageDeleted = false;
 
-      for (const field of imageFields) {
-        if (product[field] && product[field].includes(imageName)) {
-          try {
-            // Extract public ID from the Cloudinary URL
-            // The public ID is the part of the URL after the last slash and before the file extension
-            const urlParts = product[field].split("/");
-            const filename = urlParts[urlParts.length - 1];
-            const publicId = filename.split(".")[0]; // Remove file extension
+    for (const field of imageFields) {
+      if (product[field] && product[field].includes(imageName)) {
+        try {
+          // Extract public ID from the Cloudinary URL
+          // The public ID is the part of the URL after the last slash and before the file extension
+          const urlParts = product[field].split("/");
+          const filename = urlParts[urlParts.length - 1];
+          const publicId = filename.split(".")[0]; // Remove file extension
 
-            // Delete the image from Cloudinary
-            await cloudinaryServices.cloudinaryImageDelete(publicId);
+          // Delete the image from Cloudinary
+          await cloudinaryServices.cloudinaryImageDelete(publicId);
 
-            // Remove the image URL from the product
-            product[field] = undefined;
-            await product.save();
+          // Remove the image URL from the product
+          product[field] = undefined;
+          await product.save();
 
-            imageDeleted = true;
-            break;
-          } catch (error) {
-            console.error(
-              `Error deleting ${field} image from Cloudinary:`,
-              error
-            );
-            return res.status(500).json({
-              success: false,
-              message: `Error deleting ${field} image from Cloudinary`,
-            });
-          }
+          imageDeleted = true;
+          break;
+        } catch (error) {
+          console.error(
+            `Error deleting ${field} image from Cloudinary:`,
+            error
+          );
+          return res.status(500).json({
+            success: false,
+            message: `Error deleting ${field} image from Cloudinary`,
+          });
         }
       }
+    }
 
-      if (!imageDeleted) {
-        return res.status(404).json({
-          success: false,
-          message: "Image not found in product",
-        });
-      }
-
-      res.status(200).json({
-        success: true,
-        message: "Image deleted successfully",
-      });
-    } catch (error) {
-      console.error("Error deleting product image:", error);
-      res.status(500).json({
+    if (!imageDeleted) {
+      return res.status(404).json({
         success: false,
-        message: "Server error while deleting image",
+        message: "Image not found in product",
       });
     }
-  },
-};
+
+    res.status(200).json({
+      success: true,
+      message: "Image deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting product image:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while deleting image",
+    });
+  }
+}

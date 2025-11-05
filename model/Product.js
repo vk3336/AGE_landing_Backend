@@ -146,6 +146,71 @@ const productSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
+    purchasePrice: {
+      type: Number,
+      required: false,
+    },
+    salesPrice: {
+      type: Number,
+      required: false,
+    },
+    productIdentifier: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    leadtime: {
+      type: Number,
+      required: false,
+    },
+    sku: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    popularproduct: {
+      type: Boolean,
+      default: false,
+    },
+    topratedproduct: {
+      type: Boolean,
+      default: false,
+    },
+    landingPageProduct: {
+      type: Boolean,
+      default: false,
+    },
+    shopyProduct: {
+      type: Boolean,
+      default: false,
+    },
+    rating_value: {
+      type: Number,
+      required: false,
+      min: 0,
+      max: 5,
+    },
+    rating_count: {
+      type: Number,
+      required: false,
+      min: 0,
+    },
+    productlocationtitle: { 
+      type: String,
+      required: false,
+    },
+    productlocationtagline: { 
+      type: String,
+      required: false,
+    },
+    productlocationdescription1: { 
+      type: String,
+      required: false,
+    },
+    productlocationdescription2: { 
+      type: String,
+      required: false,
+    },
   },
   { timestamps: true }
 );

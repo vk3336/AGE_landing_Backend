@@ -589,7 +589,7 @@ const getAllSeoPublic = async (req, res) => {
           { path: "country", select: "name code" },
           { path: "state", select: "name code" },
         ],
-        select: "name slug",
+        // select: "name slug",
       })
       .lean();
 
@@ -646,7 +646,7 @@ const getSeoBySlugPublic = async (req, res) => {
           { path: "country", select: "name code" },
           { path: "state", select: "name code" },
         ],
-        select: "name slug",
+        // select: "name slug",
       })
       .lean();
 
