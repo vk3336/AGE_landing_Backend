@@ -8,15 +8,7 @@ const {
   getSeoByLocation,
   updateSeo,
   deleteSeo,
-  getPopularProducts,
-  getTopRatedProducts,
-  getLandingPageProducts,
   getSeoBySlug,
-  getSeoByProductIdentifier,
-  getSeoBySalesPriceValue,
-  getSeoByPurchasePriceValue,
-  getSeoByIdNoPopulate,
-  getShopyProducts,
   searchSeos,
   getAllSeoPublic,
   getSeoBySlugPublic
@@ -36,17 +28,6 @@ router.get("/public", getAllSeoPublic);
 // Get SEO by slug without purchase price (public)
 router.get("/public/slug/:slug", getSeoBySlugPublic);
 
-// Get popular products
-router.get("/popular", getPopularProducts);
-
-// Get top rated products
-router.get("/top-rated", getTopRatedProducts);
-
-// Get landing page products
-router.get("/landing-page", getLandingPageProducts);
-
-// Get shopy products
-router.get("/shopy-products", getShopyProducts);
 
 // Get SEO by slug"
 router.get("/slug/:slug", getSeoBySlug);
@@ -56,18 +37,6 @@ router.get("/product/:productId", getSeoByProduct);
 
 // Get SEO by location ID
 router.get("/location/:locationId", getSeoByLocation);
-
-// Get SEO by productIdentifier
-router.get("/identifier/:identifier", getSeoByProductIdentifier);
-
-// Get SEO by salesPrice range
-router.get("/sales-price/:value", getSeoBySalesPriceValue);
-
-// Get SEO by purchasePrice range
-router.get("/purchase-price/:value", getSeoByPurchasePriceValue);
-
-// Get SEO by ID without populating product
-router.get("/no-populate/:id", getSeoByIdNoPopulate);
 
 // Get SEO by ID (with product populated)
 router.get("/:id", getSeoById);

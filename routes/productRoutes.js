@@ -17,6 +17,9 @@ router.get("/", productController.viewAll);
 // View all products except vendor information
 router.get("/public", productController.getAllProductsExceptVendor);
 
+// Get product by productIdentifier
+router.get("/identifier/:identifier", productController.getproductByProductIdentifier);
+
 // View product by slug without vendor information
 router.get("/public/slug/:slug", productController.getPublicProductBySlug);
 

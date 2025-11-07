@@ -7,14 +7,6 @@ const seoSchema = new mongoose.Schema(
       ref: "Product",
       required: false,
     },
-    purchasePrice: {
-      type: Number,
-      required: false,
-    },
-    salesPrice: {
-      type: Number,
-      required: false,
-    },
     location: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Location",
@@ -26,40 +18,10 @@ const seoSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
-    productIdentifier: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    leadtime: {
-      type: Number,
-      required: false,
-    },
-    sku: {
-      type: String,
-      required: false,
-      trim: true,
-    },
     productdescription: {
       type: String,
       required: false,
       trim: true,
-    },
-    popularproduct: {
-      type: Boolean,
-      default: false,
-    },
-    topratedproduct: {
-      type: Boolean,
-      default: false,
-    },
-    landingPageProduct: {
-      type: Boolean,
-      default: false,
-    },
-    shopyProduct: {
-      type: Boolean,
-      default: false,
     },
     slug: {
       type: String,
@@ -86,17 +48,6 @@ const seoSchema = new mongoose.Schema(
     description_html: {
       type: String,
       required: false,
-    },
-    rating_value: {
-      type: Number,
-      required: false,
-      min: 0,
-      max: 5,
-    },
-    rating_count: {
-      type: Number,
-      required: false,
-      min: 0,
     },
     charset: {
       type: String,

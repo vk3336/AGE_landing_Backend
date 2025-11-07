@@ -1394,6 +1394,38 @@ const getShopyProducts = async (req, res) => {
   }
 };
 
+// Get product by productIdentifier
+const getproductByProductIdentifier = async (req, res) => {
+  try {
+    const { identifier } = req.params;
+
+    // Find product by productIdentifier
+    const product = await Product.findOne({ 
+      productIdentifier: identifier 
+    })
+    
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found with the given identifier',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: product,
+    });
+  } catch (error) {
+    console.error('Error fetching product by identifier:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching product',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   upload,
   multiUpload,
@@ -1404,6 +1436,7 @@ module.exports = {
   update,
   deleteById,
   validate,
+  getproductByProductIdentifier,
   searchProducts,
   getProductsByGroupcode,
   getProductsByCategory,
