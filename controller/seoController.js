@@ -572,6 +572,146 @@ const getSeoBySlugPublic = async (req, res) => {
   }
 };
 
+// Get SEO by product slug with optional location parameters
+const getSeoByProductAndCountry = async (req, res) => {
+  try {
+    const { productslug, countryslug } = req.params;
+    const { state, city, location: locationSlug } = req.query;
+
+    // First, find the product by slug
+    const product = await Product.findOne({ slug: productslug });
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found with the given slug',
+      });
+    }
+
+    // Build location query based on provided parameters
+    const locationQuery = {};
+    
+    // Find country by slug
+    const country = await mongoose.model('Country').findOne({ slug: countryslug });
+    if (!country) {
+      return res.status(404).json({
+        success: false,
+        message: 'Country not found with the given slug',
+      });
+    }
+    locationQuery.country = country._id;
+
+    // Add state to query if provided
+    if (state) {
+      const stateDoc = await mongoose.model('State').findOne({ 
+        $or: [
+          { slug: state },
+          { _id: mongoose.Types.ObjectId.isValid(state) ? state : null }
+        ]
+      });
+      if (!stateDoc) {
+        return res.status(404).json({
+          success: false,
+          message: 'State not found with the given identifier',
+        });
+      }
+      locationQuery.state = stateDoc._id;
+    }
+
+    // Add city to query if provided
+    if (city) {
+      const cityDoc = await mongoose.model('City').findOne({ 
+        $or: [
+          { slug: city },
+          { _id: mongoose.Types.ObjectId.isValid(city) ? city : null }
+        ]
+      });
+      if (!cityDoc) {
+        return res.status(404).json({
+          success: false,
+          message: 'City not found with the given identifier',
+        });
+      }
+      locationQuery.city = cityDoc._id;
+    }
+
+    // Add location slug to query if provided
+    if (locationSlug) {
+      locationQuery.slug = locationSlug;
+    }
+
+    // Find location that matches all the criteria
+    const location = await Location.findOne(locationQuery);
+
+    if (!location) {
+      return res.status(404).json({
+        success: false,
+        message: 'No matching location found for the given parameters',
+      });
+    }
+
+    // Find SEO data that matches both product and location with all necessary population
+    const seoData = await Seo.findOne({
+      product: product._id,
+      location: location._id,
+    })
+      .populate({
+        path: 'product',
+        populate: [
+          { path: 'category', select: 'name slug' },
+          { path: 'substructure', select: 'name slug' },
+          { path: 'content', select: 'name slug' },
+          { path: 'design', select: 'name slug' },
+          { path: 'subfinish', select: 'name slug' },
+          { path: 'subsuitable', select: 'name slug' },
+          { path: 'vendor', select: 'name slug' },
+          { path: 'groupcode', select: 'name code' },
+          { path: 'color', select: 'name code' },
+          { path: 'motif', select: 'name slug' }
+        ]
+      })
+      .populate({
+        path: 'location',
+        populate: [
+          {
+            path: 'country',
+            select: 'name code slug',
+            options: { lean: true }
+          },
+          {
+            path: 'state',
+            select: 'name code slug',
+            options: { lean: true }
+          },
+          {
+            path: 'city',
+            select: 'name slug',
+            options: { lean: true }
+          }
+        ]
+      })
+      .lean();
+
+    if (!seoData) {
+      return res.status(404).json({
+        success: false,
+        message: 'No SEO data found for the given product and country combination',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: seoData,
+    });
+  } catch (error) {
+    console.error('Error fetching SEO data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching SEO data',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createSeo,
   getAllSeo,
@@ -586,7 +726,7 @@ module.exports = {
   getSeoByLocation,
   getShopyProducts,
   searchSeos,
-  // New public methods
   getAllSeoPublic,
   getSeoBySlugPublic,
+  getSeoByProductAndCountry,
 };

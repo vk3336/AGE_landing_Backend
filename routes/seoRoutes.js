@@ -11,7 +11,8 @@ const {
   getSeoBySlug,
   searchSeos,
   getAllSeoPublic,
-  getSeoBySlugPublic
+  getSeoBySlugPublic,
+  getSeoByProductAndCountry
 } = require("../controller/seoController");
 
 router.get("/search/:q", searchSeos);
@@ -37,6 +38,9 @@ router.get("/product/:productId", getSeoByProduct);
 
 // Get SEO by location ID
 router.get("/location/:locationId", getSeoByLocation);
+
+// Get SEO by product slug with optional location parameters
+router.get("/:productslug/:countryslug", getSeoByProductAndCountry);
 
 // Get SEO by ID (with product populated)
 router.get("/:id", getSeoById);
