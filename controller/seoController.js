@@ -587,9 +587,6 @@ const getSeoByProductAndCountry = async (req, res) => {
       });
     }
 
-    // Build location query based on provided parameters
-    const locationQuery = {};
-    
     // Find country by slug
     const country = await mongoose.model('Country').findOne({ slug: countryslug });
     if (!country) {
@@ -598,62 +595,18 @@ const getSeoByProductAndCountry = async (req, res) => {
         message: 'Country not found with the given slug',
       });
     }
-    locationQuery.country = country._id;
 
-    // Add state to query if provided
-    if (state) {
-      const stateDoc = await mongoose.model('State').findOne({ 
-        $or: [
-          { slug: state },
-          { _id: mongoose.Types.ObjectId.isValid(state) ? state : null }
-        ]
-      });
-      if (!stateDoc) {
-        return res.status(404).json({
-          success: false,
-          message: 'State not found with the given identifier',
-        });
-      }
-      locationQuery.state = stateDoc._id;
-    }
+    // Function to find all SEO data with the given location query
+    const findAllSeoWithLocation = async (locationQuery) => {
+      const locations = await Location.find(locationQuery);
+      if (!locations || locations.length === 0) return [];
 
-    // Add city to query if provided
-    if (city) {
-      const cityDoc = await mongoose.model('City').findOne({ 
-        $or: [
-          { slug: city },
-          { _id: mongoose.Types.ObjectId.isValid(city) ? city : null }
-        ]
-      });
-      if (!cityDoc) {
-        return res.status(404).json({
-          success: false,
-          message: 'City not found with the given identifier',
-        });
-      }
-      locationQuery.city = cityDoc._id;
-    }
-
-    // Add location slug to query if provided
-    if (locationSlug) {
-      locationQuery.slug = locationSlug;
-    }
-
-    // Find location that matches all the criteria
-    const location = await Location.findOne(locationQuery);
-
-    if (!location) {
-      return res.status(404).json({
-        success: false,
-        message: 'No matching location found for the given parameters',
-      });
-    }
-
-    // Find SEO data that matches both product and location with all necessary population
-    const seoData = await Seo.findOne({
-      product: product._id,
-      location: location._id,
-    })
+      const locationIds = locations.map(loc => loc._id);
+      
+      return await Seo.find({
+        product: product._id,
+        location: { $in: locationIds },
+      })
       .populate({
         path: 'product',
         populate: [
@@ -672,35 +625,92 @@ const getSeoByProductAndCountry = async (req, res) => {
       .populate({
         path: 'location',
         populate: [
-          {
-            path: 'country',
-            select: 'name code slug',
-            options: { lean: true }
-          },
-          {
-            path: 'state',
-            select: 'name code slug',
-            options: { lean: true }
-          },
-          {
-            path: 'city',
-            select: 'name slug',
-            options: { lean: true }
-          }
+          { path: 'country', select: 'name code slug', options: { lean: true } },
+          { path: 'state', select: 'name code slug', options: { lean: true } },
+          { path: 'city', select: 'name slug', options: { lean: true } }
         ]
       })
       .lean();
+    };
 
-    if (!seoData) {
+    // Build location query based on provided parameters
+    const locationQuery = { country: country._id };
+    
+    if (state) {
+      const stateDoc = await mongoose.model('State').findOne({ 
+        $or: [
+          { slug: state },
+          { _id: mongoose.Types.ObjectId.isValid(state) ? state : null }
+        ]
+      });
+      if (stateDoc) locationQuery.state = stateDoc._id;
+    }
+    
+    if (city) {
+      const cityDoc = await mongoose.model('City').findOne({ 
+        $or: [
+          { slug: city },
+          { _id: mongoose.Types.ObjectId.isValid(city) ? city : null }
+        ]
+      });
+      if (cityDoc) locationQuery.city = cityDoc._id;
+    }
+    
+    if (locationSlug) {
+      locationQuery.slug = locationSlug;
+    }
+
+    // Function to try different location queries with fallback
+    const tryLocationQueries = async () => {
+      // Try with full location query first (country + state + city + location)
+      let seoDataList = await findAllSeoWithLocation(locationQuery);
+      
+      // If no results, try without location slug
+      if ((!seoDataList || seoDataList.length === 0) && locationSlug) {
+        const queryWithoutLocation = { ...locationQuery };
+        delete queryWithoutLocation.slug;
+        seoDataList = await findAllSeoWithLocation(queryWithoutLocation);
+        
+        // If still no results, try without city
+        if ((!seoDataList || seoDataList.length === 0) && city) {
+          const queryWithoutCity = { ...queryWithoutLocation };
+          delete queryWithoutCity.city;
+          seoDataList = await findAllSeoWithLocation(queryWithoutCity);
+          
+          // If still no results, try with just country and state
+          if ((!seoDataList || seoDataList.length === 0) && state) {
+            const queryWithJustState = { 
+              country: locationQuery.country,
+              state: locationQuery.state 
+            };
+            seoDataList = await findAllSeoWithLocation(queryWithJustState);
+          }
+        }
+      }
+      
+      // If still no results, try with just the country
+      if (!seoDataList || seoDataList.length === 0) {
+        seoDataList = await findAllSeoWithLocation({ country: country._id });
+      }
+      
+      return seoDataList || [];
+    };
+    
+    // Find matching SEO data with fallback logic
+    const seoDataList = await tryLocationQueries();
+
+    // If no SEO data found after all fallbacks
+    if (seoDataList.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No SEO data found for the given product and country combination',
+        message: 'No SEO data found for the given product and location criteria',
       });
     }
 
     res.status(200).json({
       success: true,
-      data: seoData,
+      count: seoDataList.length,
+      data: seoDataList,
     });
   } catch (error) {
     console.error('Error fetching SEO data:', error);
