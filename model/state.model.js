@@ -104,5 +104,14 @@ stateSchema.virtual('cities', {
     localField: '_id'
 });
 
+// Add pre-find hook to populate country
+stateSchema.pre(/^find/, function(next) {
+    this.populate({
+        path: 'country',
+        select: 'name code slug'
+    });
+    next();
+});
+
 const State = mongoose.model('State', stateSchema);
 module.exports = State;
