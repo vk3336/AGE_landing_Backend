@@ -40,7 +40,16 @@ const blogSchema = new mongoose.Schema({
         type: String,
         trim: true,
         required: false
+    },
+    altimage1:{
+        type:String,
+        required:false
+    },
+    altimage2:{
+        type:String,
+        required:false
     }
+    
 }, {
     timestamps: true
 });

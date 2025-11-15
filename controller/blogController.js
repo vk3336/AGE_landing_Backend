@@ -48,7 +48,9 @@ const createBlog = async (req, res) => {
             paragraph2,
             paragraph3,
             blogimage1,
-            blogimage2
+            blogimage2,
+            altimage1,
+            altimage2
         });
 
         await blog.save();
@@ -117,6 +119,8 @@ const updateBlog = async (req, res) => {
             paragraph1, 
             paragraph2, 
             paragraph3, 
+            altimage1,
+            altimage2,
             updatedAt: Date.now() 
         };
 
