@@ -32,7 +32,7 @@ const createBlog = async (req, res) => {
     }
     
     try {
-        const { title, author, heading, paragraph1, paragraph2, paragraph3 } = req.body;
+        const { title, author, heading, paragraph1, paragraph2, paragraph3, altimage1, altimage2 } = req.body;
         
         // Upload images if they exist in the request
         const [blogimage1, blogimage2] = await Promise.all([
@@ -111,7 +111,7 @@ const updateBlog = async (req, res) => {
     }
     
     try {
-        const { title, author, heading, paragraph1, paragraph2, paragraph3, deleteImage1, deleteImage2 } = req.body;
+        const { title, author, heading, paragraph1, paragraph2, paragraph3, deleteImage1, deleteImage2, altimage1, altimage2 } = req.body;
         const updateData = { 
             title, 
             author, 
