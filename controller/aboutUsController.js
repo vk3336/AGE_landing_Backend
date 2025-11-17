@@ -26,7 +26,7 @@ exports.createAboutUs = async (req, res) => {
       descriptionsmall,
       descriptionmedium,
       descriptionlarger,
-    });
+    }); 
 
     res.status(201).json({
       status: "success",
