@@ -19,13 +19,15 @@ exports.searchCities = async (req, res, next) => {
 // Create a new city
 exports.createCity = async (req, res) => {
   try {
-    const { name, country, state, slug } = req.body;
+    const { name, country, state, slug, longitude, latitude } = req.body;
 
     const city = await City.create({
       name,
       country,
       state,
       ...(slug && { slug }), // Include slug if provided
+      ...(longitude !== undefined && { longitude }),
+      ...(latitude !== undefined && { latitude })
     });
 
     res.status(201).json({
@@ -152,38 +154,50 @@ exports.findBySlug = async (req, res) => {
 };
 
 // Update a city
+// In city.controller.js - Update the updateCity function
 exports.updateCity = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, pincode, country, state, slug } = req.body;
+    const { name, country, state, slug, longitude, latitude } = req.body;
 
-    const updateData = { name, pincode, country, state };
-    if (slug) {
-      updateData.slug = slug;
-    }
+    const updateData = {
+      name,
+      country,
+      state,
+      ...(slug && { slug }),
+      ...(longitude !== undefined && { longitude }),
+      ...(latitude !== undefined && { latitude }),
+      updatedAt: Date.now() // Ensure updatedAt is always updated
+    };
 
-    const city = await City.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    });
+    // Find and update the city
+    const updatedCity = await City.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    )
+    .populate('state', 'name slug')
+    .populate('country', 'name slug');
 
-    if (!city) {
+    if (!updatedCity) {
       return res.status(404).json({
         status: "error",
         message: "No city found with that ID",
       });
     }
 
+    // Return the updated city with populated fields
     res.status(200).json({
       status: "success",
       data: {
-        city,
-      },
+        city: updatedCity
+      }
     });
   } catch (error) {
+    console.error('Error updating city:', error);
     res.status(400).json({
       status: "error",
-      message: error.message,
+      message: error.message || "Failed to update city",
     });
   }
 };

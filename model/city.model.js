@@ -21,6 +21,18 @@ const citySchema = new mongoose.Schema({
     state: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'State'
+    },
+    longitude: {
+        type: Number,
+        required: false,
+        min: -180,
+        max: 180
+    },
+    latitude: {
+        type: Number,
+        required: false,
+        min: -90,
+        max: 90
     }
 }, {
     timestamps: true,
