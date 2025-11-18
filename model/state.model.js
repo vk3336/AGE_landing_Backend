@@ -22,6 +22,14 @@ const stateSchema = new mongoose.Schema({
     country: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Country'
+    },
+    longitude: {
+        type: Number,
+        default: 0
+    },
+    latitude: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true,

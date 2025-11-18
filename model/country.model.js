@@ -20,6 +20,14 @@ const countrySchema = new mongoose.Schema({
         uppercase: true,
         minlength: 2,
         maxlength: 3
+    },
+    longitude: {
+        type: Number,
+        default: 0
+    },
+    latitude: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true,

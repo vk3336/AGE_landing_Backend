@@ -19,12 +19,14 @@ exports.searchCountries = async (req, res, next) => {
 // Create a new country
 exports.createCountry = async (req, res) => {
   try {
-    const { name, code, slug } = req.body;
+    const { name, code, slug, longitude, latitude } = req.body;
 
     const country = await Country.create({
       name,
       code,
       ...(slug && { slug }), // Include slug if provided
+      longitude: longitude || 0,
+      latitude: latitude || 0
     });
 
     res.status(201).json({
@@ -123,11 +125,17 @@ exports.findBySlug = async (req, res) => {
 exports.updateCountry = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, code, slug } = req.body;
+    const { name, code, slug, longitude, latitude } = req.body;
 
     const updateData = { name, code };
     if (slug) {
       updateData.slug = slug;
+    }
+    if (longitude !== undefined) {
+      updateData.longitude = longitude;
+    }
+    if (latitude !== undefined) {
+      updateData.latitude = latitude;
     }
 
     const country = await Country.findByIdAndUpdate(id, updateData, {
