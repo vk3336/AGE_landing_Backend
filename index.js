@@ -33,11 +33,8 @@ const apiKeyMiddleware = require("./middleware/apiKeyMiddleware");
 
 // Location routes
 const countryRoutes = require("./routes/country.routes");
-const countryDetailRoutes = require("./routes/countryDetailRoutes");
 const stateRoutes = require("./routes/state.routes");
-const stateDetailRoutes = require("./routes/stateDetailRoutes");
 const cityRoutes = require("./routes/city.routes");
-const cityDetailRoutes =require("./routes/cityDetailRoutes");
 const locationRoutes = require("./routes/location.routes");
 const locationDetailRoutes= require("./routes/locationDetailRoutes");
 const contactRoutes = require("./routes/contactRoutes");
@@ -237,11 +234,8 @@ const registerRoutes = (basePath) => {
 
   // Locations
   app.use(`${apiPath}/countries`, countryRoutes);
-  app.use(`${apiPath}/country-details`, countryDetailRoutes);
   app.use(`${apiPath}/states`, stateRoutes);
-  app.use(`${apiPath}/state-details`, stateDetailRoutes);
   app.use(`${apiPath}/cities`, cityRoutes);
-  app.use(`${apiPath}/city-details`, cityDetailRoutes);
   app.use(`${apiPath}/locations`, locationRoutes);
   app.use(`${apiPath}/location-details`, locationDetailRoutes);
   app.use(`${apiPath}/contacts`, contactRoutes);
