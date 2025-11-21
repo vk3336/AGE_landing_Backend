@@ -54,13 +54,11 @@ const locationSchema = new mongoose.Schema(
 // Handle slug and name validation before saving
 locationSchema.pre("save", async function (next) {
   try {
-    // Convert name to lowercase for case-insensitive comparison
+    // Do not modify the stored `name`. Use case-insensitive checks instead.
     if (this.isModified("name")) {
-      this.name = this.name.toLowerCase();
-
       // Check if name already exists (case-insensitive) within the same city
       const existingName = await this.constructor.findOne({
-        name: this.name,
+        name: { $regex: new RegExp(`^${this.name}$`, "i") },
         city: this.city, // Check within the same city
         _id: { $ne: this._id }, // Exclude current document when updating
       });
@@ -86,6 +84,7 @@ locationSchema.pre("save", async function (next) {
     }
     // Only generate slug if it's not provided and name is modified
     else if (this.isModified("name")) {
+      // Generate a slug from the name without altering the stored name
       let slug = this.name
         .toString()
         .toLowerCase()
