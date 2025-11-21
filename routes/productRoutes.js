@@ -18,7 +18,10 @@ router.get("/", productController.viewAll);
 router.get("/public", productController.getAllProductsExceptVendor);
 
 // Get product by productIdentifier
-router.get("/identifier/:identifier", productController.getproductByProductIdentifier);
+router.get(
+  "/identifier/:identifier",
+  productController.getproductByProductIdentifier
+);
 
 // View product by slug without vendor information
 router.get("/public/slug/:slug", productController.getPublicProductBySlug);
@@ -59,11 +62,7 @@ router.get("/inch/:value", productController.getProductsByInchValue);
 // GET PRODUCTS BY CM RANGE
 router.get("/cm/:value", productController.getProductsByCmValue);
 
-// GET PRODUCTS BY QUANTITY RANGE
-router.get(
-  "/quantity/:value",
-  productController.getProductsByQuantityValue
-);
+// Quantity-based route removed (field removed from Product)
 
 // GET PRODUCT BY SLUG
 router.get("/slug/:slug", productController.getProductBySlug);

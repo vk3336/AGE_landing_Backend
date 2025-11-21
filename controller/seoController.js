@@ -353,7 +353,7 @@ const getShopyProducts = async (req, res) => {
 
     const [products, total] = await Promise.all([
       Seo.find({ shopyProduct: true })
-        .populate("product", "name img")
+        .populate("product", "name image3")
         .populate("location", "name")
         .sort({ createdAt: -1 })
         .skip(skip)

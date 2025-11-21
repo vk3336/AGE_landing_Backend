@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const slugify = require('slugify');
+const slugify = require("slugify");
 
 // Custom validator to ensure at least one color is selected
 function arrayLimit(val) {
@@ -20,7 +20,7 @@ const productSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
-    img: {
+    image3: {
       type: String,
       required: false,
     },
@@ -86,9 +86,9 @@ const productSchema = new mongoose.Schema(
       required: false,
     },
     subsuitable: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Subsuitable",
+      type: [String],
       required: false,
+      default: [],
     },
     vendor: {
       type: mongoose.Schema.Types.ObjectId,
@@ -101,12 +101,14 @@ const productSchema = new mongoose.Schema(
       required: false,
     },
     color: {
-      type: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Color"
-      }],
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Color",
+        },
+      ],
       required: false,
-      default: []
+      default: [],
     },
     motif: {
       type: mongoose.Schema.Types.ObjectId,
@@ -137,15 +139,7 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: false,
     },
-    quantity: {
-      type: Number,
-      required: false,
-    },
-    productdescription: {
-      type: String,
-      required: false,
-      trim: true,
-    },
+    // removed `quantity` and `productdescription` as requested
     purchasePrice: {
       type: Number,
       required: false,
@@ -154,7 +148,7 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: false,
     },
-    productIdentifier: {
+    vendorFabricCode: {
       type: String,
       required: false,
       trim: true,
@@ -195,19 +189,19 @@ const productSchema = new mongoose.Schema(
       required: false,
       min: 0,
     },
-    productlocationtitle: { 
+    productTitle: {
       type: String,
       required: false,
     },
-    productlocationtagline: { 
+    productTagline: {
       type: String,
       required: false,
     },
-    productlocationdescription1: { 
+    shortProductDescription: {
       type: String,
       required: false,
     },
-    productlocationdescription2: { 
+    fullProductDescription: {
       type: String,
       required: false,
     },
@@ -228,55 +222,55 @@ productSchema.index({ groupcode: 1 });
 productSchema.index({ color: 1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ updatedAt: -1 });
-productSchema.index({ quantity: 1 });
+// quantity index removed because field was removed
 
 // Handle slug and name validation before saving
-productSchema.pre('save', async function(next) {
+productSchema.pre("save", async function (next) {
   try {
     // Convert name to lowercase for case-insensitive comparison if it exists
-    if (this.name && this.isModified('name')) {
+    if (this.name && this.isModified("name")) {
       this.name = this.name.toString().trim();
-      
+
       // Check if name already exists (case-insensitive)
-      const existingName = await this.constructor.findOne({ 
-        name: { $regex: new RegExp(`^${this.name}$`, 'i') },
-        _id: { $ne: this._id } // Exclude current document when updating
+      const existingName = await this.constructor.findOne({
+        name: { $regex: new RegExp(`^${this.name}$`, "i") },
+        _id: { $ne: this._id }, // Exclude current document when updating
       });
-      
+
       if (existingName) {
-        const error = new Error('Product name already exists');
-        error.name = 'ValidationError';
+        const error = new Error("Product name already exists");
+        error.name = "ValidationError";
         return next(error);
       }
     }
-    
+
     // Clean and process the slug if provided
     if (this.slug) {
       // Remove all special characters and keep only alphanumeric and hyphens
       this.slug = this.slug
         .toString()
         .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '') // Remove all non-alphanumeric except spaces and hyphens
-        .replace(/\s+/g, '-')         // Replace spaces with -
-        .replace(/-+/g, '-')          // Replace multiple - with single -
-        .replace(/^-+/, '')           // Trim - from start of text
-        .replace(/-+$/, '');          // Trim - from end of text
-      
+        .replace(/[^a-z0-9\s-]/g, "") // Remove all non-alphanumeric except spaces and hyphens
+        .replace(/\s+/g, "-") // Replace spaces with -
+        .replace(/-+/g, "-") // Replace multiple - with single -
+        .replace(/^-+/, "") // Trim - from start of text
+        .replace(/-+$/, ""); // Trim - from end of text
+
       // Check if slug already exists
-      const existingSlug = await this.constructor.findOne({ 
+      const existingSlug = await this.constructor.findOne({
         slug: this.slug,
-        _id: { $ne: this._id }
+        _id: { $ne: this._id },
       });
-      
+
       if (existingSlug) {
         // If slug exists, append a counter
         let count = 1;
         let baseSlug = this.slug;
         while (true) {
           const newSlug = `${baseSlug}-${count++}`;
-          const slugExists = await this.constructor.findOne({ 
+          const slugExists = await this.constructor.findOne({
             slug: newSlug,
-            _id: { $ne: this._id }
+            _id: { $ne: this._id },
           });
           if (!slugExists) {
             this.slug = newSlug;
@@ -284,38 +278,38 @@ productSchema.pre('save', async function(next) {
           }
         }
       }
-    } 
+    }
     // Generate slug from name if no slug provided and name exists
     else if (this.name) {
       let slug = this.name
         .toString()
         .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-+/, '')
-        .replace(/-+$/, '');
-      
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-+/, "")
+        .replace(/-+$/, "");
+
       let count = 1;
       let baseSlug = slug;
-      
+
       // Check if slug already exists and make it unique if needed
       while (true) {
-        const existingSlug = await this.constructor.findOne({ 
+        const existingSlug = await this.constructor.findOne({
           slug,
-          _id: { $ne: this._id }
+          _id: { $ne: this._id },
         });
         if (!existingSlug) break;
         slug = `${baseSlug}-${count++}`; // Add counter to make it unique
       }
-      
+
       this.slug = slug;
     }
     // If no name or slug, generate a random slug
     else if (!this.slug) {
-      this.slug = 'product-' + Math.random().toString(36).substr(2, 9);
+      this.slug = "product-" + Math.random().toString(36).substr(2, 9);
     }
-    
+
     next();
   } catch (error) {
     next(error);

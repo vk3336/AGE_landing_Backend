@@ -331,7 +331,7 @@ const getAllCollectionsData = async (req, res) => {
     // (projection: 0 = exclude, 1 = include)
     const PROJECTIONS_BY_MODEL = {
       Seo: { purchasePrice: 0, salesPrice: 0 },
-      Product: { vendor: 0, quantity: 0 },
+      Product: { vendor: 0 },
       // add more models here if needed later
     };
 
@@ -349,7 +349,7 @@ const getAllCollectionsData = async (req, res) => {
         const projection = PROJECTIONS_BY_MODEL[model.modelName] || {};
 
         const data = await model
-          .find({}, projection)  // ← exclusions applied here
+          .find({}, projection) // ← exclusions applied here
           .lean()
           .exec();
 
@@ -382,8 +382,6 @@ const getAllCollectionsData = async (req, res) => {
     });
   }
 };
-
-
 
 module.exports = {
   compareDatabases,

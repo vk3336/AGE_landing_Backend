@@ -26,7 +26,6 @@ const Substructure = require("../model/Substructure");
 const Content = require("../model/Content");
 const Design = require("../model/Design");
 const Subfinish = require("../model/Subfinish");
-const Subsuitable = require("../model/Subsuitable");
 const Vendor = require("../model/Vendor");
 const Groupcode = require("../model/Groupcode");
 const Color = require("../model/Color");
@@ -87,8 +86,12 @@ const validate = [
     .withMessage("Subfinish must be a valid Mongo ID"),
   body("subsuitable")
     .optional()
-    .isMongoId()
-    .withMessage("Subsuitable must be a valid Mongo ID"),
+    .isArray()
+    .withMessage("Subsuitable must be an array of strings"),
+  body("subsuitable.*")
+    .optional()
+    .isString()
+    .withMessage("Each subsuitable item must be a string"),
   body("vendor")
     .optional()
     .isMongoId()
@@ -201,20 +204,17 @@ const create = async (req, res) => {
       oz,
       cm,
       inch,
-      quantity: rawQuantity,
-      productdescription,
+      vendorFabricCode,
+      productTitle,
+      productTagline,
+      shortProductDescription,
+      fullProductDescription,
       altimg1,
       altimg2,
       altimg3,
       altvideo,
     } = req.body;
-    let quantity = undefined;
-    if (rawQuantity !== undefined && rawQuantity !== "") {
-      const parsed = Number(rawQuantity);
-      if (!isNaN(parsed)) {
-        quantity = parsed;
-      }
-    }
+    // quantity removed — no longer stored on Product
 
     // 🚀 BATCH VALIDATION - Check all references in parallel if provided
     const validationPromises = [
@@ -263,14 +263,21 @@ const create = async (req, res) => {
           )
         : Promise.resolve({ field: "subfinish", exists: true }),
 
-      // Only validate subsuitable if provided
-      subsuitable
-        ? Subsuitable.exists({ _id: subsuitable }).then((exists) =>
-            exists
-              ? { field: "subsuitable", exists: true }
-              : { field: "subsuitable", exists: false }
-          )
-        : Promise.resolve({ field: "subsuitable", exists: true }),
+      // Validate subsuitable as an array of non-empty strings (if provided)
+      (async () => {
+        if (!subsuitable) return { field: "subsuitable", exists: true };
+        // Accept both single string and array, but prefer array
+        const items = Array.isArray(subsuitable) ? subsuitable : [subsuitable];
+        const invalid = items.filter((s) => typeof s !== "string" || !s.trim());
+        if (invalid.length > 0) {
+          return {
+            field: "subsuitable",
+            exists: false,
+            message: `Invalid subsuitable values: ${invalid.join(", ")}`,
+          };
+        }
+        return { field: "subsuitable", exists: true };
+      })(),
 
       // Handle color validation - colors are optional but if provided, must be valid
       (async () => {
@@ -384,11 +391,11 @@ const create = async (req, res) => {
     }
 
     // Handle main image - can be either a new file or an existing URL
-    let img = req.body.img || "";
+    let image3Url = req.body.image3 || "";
     // Check if a new file was uploaded
     const mainImageFile =
       (req.files && req.files.file && req.files.file[0]) ||
-      (req.files && req.files.img && req.files.img[0]);
+      (req.files && req.files.image3 && req.files.image3[0]);
     if (mainImageFile) {
       const uploadResult = await cloudinaryServices.cloudinaryImageUpload(
         mainImageFile.buffer,
@@ -397,7 +404,7 @@ const create = async (req, res) => {
       );
       console.log("[DEBUG] Cloudinary main image upload result:", uploadResult);
       if (uploadResult && uploadResult.secure_url) {
-        img = uploadResult.secure_url;
+        image3Url = uploadResult.secure_url;
       } else if (uploadResult && uploadResult.error) {
         return res.status(500).json({
           success: false,
@@ -473,7 +480,7 @@ const create = async (req, res) => {
     }
     const product = new Product({
       name,
-      img,
+      image3: image3Url,
       image1: image1Url,
       image2: image2Url,
       video: videoUrl,
@@ -494,8 +501,11 @@ const create = async (req, res) => {
       oz,
       cm,
       inch,
-      quantity,
-      productdescription,
+      vendorFabricCode,
+      productTitle,
+      productTagline,
+      shortProductDescription,
+      fullProductDescription,
       altimg1,
       altimg2,
       altimg3,
@@ -511,7 +521,6 @@ const create = async (req, res) => {
       .populate("content", "name")
       .populate("design", "name")
       .populate("subfinish", "name")
-      .populate("subsuitable", "name")
       .populate("vendor", "name")
       .populate("groupcode", "name")
       .populate("color", "name")
@@ -545,7 +554,6 @@ const viewAll = async (req, res) => {
       .populate("content", "name")
       .populate("design", "name")
       .populate("subfinish", "name")
-      .populate("subsuitable", "name")
       .populate("vendor", "name")
       .populate("groupcode", "name")
       .populate("color", "name")
@@ -571,7 +579,6 @@ const viewById = async (req, res) => {
       .populate("content", "name")
       .populate("design", "name")
       .populate("subfinish", "name")
-      .populate("subsuitable", "name")
       .populate("vendor", "name")
       .populate("groupcode", "name")
       .populate("color", "name")
@@ -581,7 +588,7 @@ const viewById = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Product not found" });
     }
-    
+
     res.status(200).json({ success: true, data: product });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message, error });
@@ -623,16 +630,7 @@ const update = async (req, res) => {
       req.files = filesObj;
     }
 
-    if (req.body.quantity !== undefined && req.body.quantity !== "") {
-      const parsed = Number(req.body.quantity);
-      if (!isNaN(parsed)) {
-        updateData.quantity = parsed;
-      } else {
-        delete updateData.quantity;
-      }
-    } else {
-      delete updateData.quantity;
-    }
+    // quantity removed — ignore quantity updates coming in request body
 
     // Fetch the product to get old image URLs and category for folder
     const oldProduct = await Product.findById(id).lean();
@@ -656,8 +654,8 @@ const update = async (req, res) => {
 
     // ---- MEDIA UPDATES ----
     try {
-      // Main image: accept 'file' or 'img'
-      const mainImageFile = req.files?.file?.[0] || req.files?.img?.[0];
+      // Main image: accept 'file' or 'image3'
+      const mainImageFile = req.files?.file?.[0] || req.files?.image3?.[0];
 
       if (mainImageFile) {
         validateFile(
@@ -672,8 +670,8 @@ const update = async (req, res) => {
           categoryFolder
         );
         if (uploaded?.secure_url) {
-          if (oldProduct.img) {
-            const publicId = oldProduct.img
+          if (oldProduct.image3) {
+            const publicId = oldProduct.image3
               .split("/")
               .slice(-1)[0]
               .split(".")[0];
@@ -681,7 +679,7 @@ const update = async (req, res) => {
               .cloudinaryImageDelete(publicId)
               .catch(console.error);
           }
-          updateData.img = uploaded.secure_url;
+          updateData.image3 = uploaded.secure_url;
         }
       }
 
@@ -798,7 +796,15 @@ const update = async (req, res) => {
         );
       if (updateData.subsuitable)
         validationPromises.push(
-          Subsuitable.exists({ _id: updateData.subsuitable })
+          (async () => {
+            const items = Array.isArray(updateData.subsuitable)
+              ? updateData.subsuitable
+              : [updateData.subsuitable];
+            const invalid = items.filter(
+              (s) => typeof s !== "string" || !s.trim()
+            );
+            return invalid.length === 0;
+          })()
         );
       if (updateData.vendor)
         validationPromises.push(Vendor.exists({ _id: updateData.vendor }));
@@ -851,7 +857,6 @@ const update = async (req, res) => {
         { path: "content", select: "name" },
         { path: "design", select: "name" },
         { path: "subfinish", select: "name" },
-        { path: "subsuitable", select: "name" },
         { path: "vendor", select: "name" },
         { path: "groupcode", select: "name" },
         { path: "color", select: "name" },
@@ -884,8 +889,8 @@ const deleteById = async (req, res) => {
       return res.status(404).json({ success: false, message: "Not found" });
     }
     // Remove image file
-    if (deleted.img) {
-      const publicId = deleted.img.split("/").pop().split(".")[0];
+    if (deleted.image3) {
+      const publicId = deleted.image3.split("/").pop().split(".")[0];
       await cloudinaryServices.cloudinaryImageDelete(publicId);
     }
     res.status(200).json({ success: true, message: "Deleted successfully" });
@@ -1065,10 +1070,10 @@ const getProductsByInchValue = async (req, res, next) => {
     const query = { inch: { $gte: min, $lte: max } };
     const matched = await Product.find(query);
     // Transform image URLs for all matched products
-    const transformedProducts = matched.map(product => {
+    const transformedProducts = matched.map((product) => {
       // Handle both Mongoose documents and plain objects
-      return typeof product.toObject === 'function' 
-        ? product.toObject() 
+      return typeof product.toObject === "function"
+        ? product.toObject()
         : product;
     });
     res.status(200).json({ status: 1, data: transformedProducts });
@@ -1097,27 +1102,7 @@ const getProductsByCmValue = async (req, res, next) => {
   }
 };
 
-// GET PRODUCTS BY QUANTITY RANGE
-const getProductsByQuantityValue = async (req, res, next) => {
-  const value = Number(req.params.value);
-  try {
-    if (isNaN(value))
-      return res
-        .status(400)
-        .json({ status: 0, message: "Invalid Quantity value" });
-    const range = value * 0.15;
-    const min = value - range;
-    const max = value + range;
-    const matched = await Product.find({ quantity: { $gte: min, $lte: max } });
-    if (!matched.length)
-      return res
-        .status(404)
-        .json({ status: 0, message: "No Quantity products found in range" });
-    res.status(200).json({ status: 1, data: matched });
-  } catch (error) {
-    next(error);
-  }
-};
+// Quantity-based product filtering removed — `quantity` field no longer exists on Product
 
 // GET PRODUCT BY SLUG
 const getProductBySlug = async (req, res, next) => {
@@ -1137,7 +1122,6 @@ const getProductBySlug = async (req, res, next) => {
       .populate("content")
       .populate("design")
       .populate("subfinish")
-      .populate("subsuitable")
       .populate("vendor")
       .populate("groupcode")
       .populate("color")
@@ -1151,10 +1135,9 @@ const getProductBySlug = async (req, res, next) => {
     }
 
     // Transform image URLs before sending response
-    const productObj = typeof product.toObject === 'function' 
-      ? product.toObject() 
-      : product;
-    
+    const productObj =
+      typeof product.toObject === "function" ? product.toObject() : product;
+
     res.status(200).json({
       status: 1,
       data: productObj,
@@ -1170,7 +1153,7 @@ const getAllProductsExceptVendor = async (req, res) => {
   try {
     const products = await Product.find({})
       .select("-vendor") // Exclude vendor field
-     
+
       .lean();
 
     res.status(200).json({
@@ -1205,7 +1188,6 @@ const getPublicProductBySlug = async (req, res, next) => {
       .populate("content")
       .populate("design")
       .populate("subfinish")
-      .populate("subsuitable")
       .populate("groupcode")
       .populate("color")
       .populate("motif")
@@ -1236,19 +1218,19 @@ const getPopularProducts = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const [products, total] = await Promise.all([
-      Product.find({ 
+      Product.find({
         popularproduct: true,
-        status: { $ne: 'inactive' } 
+        status: { $ne: "inactive" },
       })
-        .select('-__v -createdAt -updatedAt')
+        .select("-__v -createdAt -updatedAt")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      Product.countDocuments({ 
+      Product.countDocuments({
         popularproduct: true,
-        status: { $ne: 'inactive' } 
-      })
+        status: { $ne: "inactive" },
+      }),
     ]);
 
     res.status(200).json({
@@ -1257,7 +1239,7 @@ const getPopularProducts = async (req, res) => {
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: page,
-      data: products
+      data: products,
     });
   } catch (error) {
     console.error("Error fetching popular products:", error);
@@ -1277,21 +1259,21 @@ const getTopRatedProducts = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const [products, total] = await Promise.all([
-      Product.find({ 
+      Product.find({
         topratedproduct: true,
-        status: { $ne: 'inactive' },
-        rating_value: { $gte: 4 }
+        status: { $ne: "inactive" },
+        rating_value: { $gte: 4 },
       })
-        .select('-__v -createdAt -updatedAt')
+        .select("-__v -createdAt -updatedAt")
         .sort({ rating_value: -1, rating_count: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      Product.countDocuments({ 
+      Product.countDocuments({
         topratedproduct: true,
-        status: { $ne: 'inactive' },
-        rating_value: { $gte: 4 }
-      })
+        status: { $ne: "inactive" },
+        rating_value: { $gte: 4 },
+      }),
     ]);
 
     res.status(200).json({
@@ -1300,7 +1282,7 @@ const getTopRatedProducts = async (req, res) => {
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: page,
-      data: products
+      data: products,
     });
   } catch (error) {
     console.error("Error fetching top rated products:", error);
@@ -1320,19 +1302,19 @@ const getLandingPageProducts = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const [products, total] = await Promise.all([
-      Product.find({ 
+      Product.find({
         landingPageProduct: true,
-        status: { $ne: 'inactive' } 
+        status: { $ne: "inactive" },
       })
-        .select('-__v -createdAt -updatedAt')
+        .select("-__v -createdAt -updatedAt")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      Product.countDocuments({ 
+      Product.countDocuments({
         landingPageProduct: true,
-        status: { $ne: 'inactive' } 
-      })
+        status: { $ne: "inactive" },
+      }),
     ]);
 
     res.status(200).json({
@@ -1341,7 +1323,7 @@ const getLandingPageProducts = async (req, res) => {
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: page,
-      data: products
+      data: products,
     });
   } catch (error) {
     console.error("Error fetching landing page products:", error);
@@ -1361,19 +1343,19 @@ const getShopyProducts = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const [products, total] = await Promise.all([
-      Product.find({ 
+      Product.find({
         shopyProduct: true,
-        status: { $ne: 'inactive' } 
+        status: { $ne: "inactive" },
       })
-        .select('-__v -createdAt -updatedAt')
+        .select("-__v -createdAt -updatedAt")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      Product.countDocuments({ 
+      Product.countDocuments({
         shopyProduct: true,
-        status: { $ne: 'inactive' } 
-      })
+        status: { $ne: "inactive" },
+      }),
     ]);
 
     res.status(200).json({
@@ -1382,7 +1364,7 @@ const getShopyProducts = async (req, res) => {
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: page,
-      data: products
+      data: products,
     });
   } catch (error) {
     console.error("Error fetching shopy products:", error);
@@ -1399,16 +1381,15 @@ const getproductByProductIdentifier = async (req, res) => {
   try {
     const { identifier } = req.params;
 
-    // Find product by productIdentifier
-    const product = await Product.findOne({ 
-      productIdentifier: identifier 
-    })
-    
+    // Find product by vendorFabricCode
+    const product = await Product.findOne({
+      vendorFabricCode: identifier,
+    });
 
     if (!product) {
       return res.status(404).json({
         success: false,
-        message: 'Product not found with the given identifier',
+        message: "Product not found with the given identifier",
       });
     }
 
@@ -1417,10 +1398,10 @@ const getproductByProductIdentifier = async (req, res) => {
       data: product,
     });
   } catch (error) {
-    console.error('Error fetching product by identifier:', error);
+    console.error("Error fetching product by identifier:", error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching product',
+      message: "Error fetching product",
       error: error.message,
     });
   }
@@ -1449,7 +1430,6 @@ module.exports = {
   getProductsByOzValue,
   getProductsByInchValue,
   getProductsByCmValue,
-  getProductsByQuantityValue,
   getProductBySlug,
   getAllProductsExceptVendor,
   getPublicProductBySlug,
@@ -1457,7 +1437,7 @@ module.exports = {
   getTopRatedProducts,
   getLandingPageProducts,
   getShopyProducts,
-  deleteProductImage
+  deleteProductImage,
 };
 
 // DELETE PRODUCT IMAGE
@@ -1474,7 +1454,7 @@ async function deleteProductImage(req, res) {
     }
 
     // Determine which image field contains the image to delete
-    const imageFields = ["img", "image1", "image2"];
+    const imageFields = ["image3", "image1", "image2"];
     let imageDeleted = false;
 
     for (const field of imageFields) {
