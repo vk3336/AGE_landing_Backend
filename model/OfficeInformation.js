@@ -139,6 +139,51 @@ const officeInformationSchema = new mongoose.Schema(
         message: "Twitter URL must start with http:// or https://",
       },
     },
+
+    localbussinessjsonldtype: {
+      type: String,
+    },
+    localbussinessjsonldcontext: {
+      type: String,
+    },
+    localbussinessjsonldname: {
+      type: String,
+    },
+    localbussinessjsonldtelephone: {
+      type: String,
+    },
+    localbussinessjsonldareaserved: {
+      type: String,
+    },
+
+    localbussinessjsonldaddresstype: {
+      type: String,
+    },
+    localbussinessjsonldaddressstreetaddress: {
+      type: String,
+    },
+    localbussinessjsonldaddressaddresslocality: {
+      type: String,
+    },
+    localbussinessjsonldaddressaddressregion: {
+      type: String,
+    },
+    localbussinessjsonldaddresspostalcode: {
+      type: String,
+    },
+    localbussinessjsonldaddressaddresscountry: {
+      type: String,
+    },
+
+    localbussinessjsonldgeotype: {
+      type: String,
+    },
+    localbussinessjsonldgeolatitude: {
+      type: Number,
+    },
+    localbussinessjsonldgeolongitude: {
+      type: Number,
+    },
   },
   {
     timestamps: true,
