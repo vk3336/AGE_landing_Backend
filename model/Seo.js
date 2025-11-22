@@ -108,17 +108,7 @@ const seoSchema = new mongoose.Schema(
     },
     VideoJsonLd: { type: String, trim: true },
 
-    // LogoJsonLd fields removed
-
-    BreadcrumbJsonLd: { type: String, trim: true },
-    BreadcrumbJsonLdtype: { type: String, trim: true },
-    BreadcrumbJsonLdcontext: { type: String, trim: true },
-    BreadcrumbJsonLdname: { type: String, trim: true },
-    BreadcrumbJsonLditemListElement: { type: String, trim: true },
-    BreadcrumbJsonLditemListElementtype: { type: String, trim: true },
-    BreadcrumbJsonLditemListElementitem: { type: String, trim: true },
-    BreadcrumbJsonLditemListElementname: { type: String, trim: true },
-    BreadcrumbJsonLditemListElementposition: { type: String, trim: true },
+    
   },
   { timestamps: true }
 );
