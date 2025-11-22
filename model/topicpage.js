@@ -238,4 +238,4 @@ staticSeoSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model("StaticSEO", staticSeoSchema);
+module.exports = mongoose.model("topicpage", staticSeoSchema);

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const staticSeoController = require('../controller/staticSeoController');
+const staticSeoController = require('../controller/topicpageController');
 
 // Public routes
 router.get('/', staticSeoController.getAllStaticSEO);

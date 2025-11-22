@@ -1,4 +1,4 @@
-const StaticSEO = require('../model/StaticSEO');
+const StaticSEO = require('../model/topicpage');
 const { validationResult } = require('express-validator');
 
 // Create a new StaticSEO entry

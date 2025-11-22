@@ -26,7 +26,7 @@ const productRoutes = require("./routes/productRoutes");
 const seoRoutes = require("./routes/seoRoutes");
 const motifRoutes = require("./routes/motifRoutes");
 const roleManagementRoutes = require("./routes/roleManagementRoutes");
-const staticSeoRoutes = require("./routes/staticSeoRoutes");
+const topicpageseoRoutes = require("./routes/topicpageSeoRoutes");
 const userRoutes = require("./routes/userRoutes");
 const dbRoutes = require("./routes/dbRoutes");
 const apiKeyMiddleware = require("./middleware/apiKeyMiddleware");
@@ -229,7 +229,7 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/seo`, seoRoutes);
   app.use(`${apiPath}/motif`, motifRoutes);
   app.use(`${apiPath}/roles`, roleManagementRoutes);
-  app.use(`${apiPath}/static-seo`, staticSeoRoutes);
+  app.use(`${apiPath}/topicpage-seo`, topicpageseoRoutes);
   app.use(`${apiPath}/users`, userRoutes);
 
   // Locations
