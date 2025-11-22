@@ -118,6 +118,15 @@ const validate = [
   body("oz").optional().isNumeric().withMessage("OZ must be a number"),
   body("cm").optional().isNumeric().withMessage("CM must be a number"),
   body("inch").optional().isNumeric().withMessage("Inch must be a number"),
+  // Leadtime should be an array of strings (e.g. ["7 days", "14 days"]) if provided
+  body("leadtime")
+    .optional()
+    .isArray()
+    .withMessage("Leadtime must be an array"),
+  body("leadtime.*")
+    .optional()
+    .isString()
+    .withMessage("Each leadtime item must be a string"),
 ];
 
 const create = async (req, res) => {
@@ -205,6 +214,7 @@ const create = async (req, res) => {
       cm,
       inch,
       vendorFabricCode,
+      leadtime,
       productTitle,
       productTagline,
       shortProductDescription,
@@ -478,6 +488,16 @@ const create = async (req, res) => {
         console.error("Video upload failed:", videoResult.error);
       }
     }
+    // Normalize leadtime into an array of trimmed strings (remove falsy/empty)
+    let leadtimeArr = undefined;
+    if (typeof leadtime !== "undefined") {
+      leadtimeArr = Array.isArray(leadtime) ? leadtime : [leadtime];
+      leadtimeArr = leadtimeArr
+        .map((v) => (v == null ? "" : String(v)))
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+
     const product = new Product({
       name,
       image3: image3Url,
@@ -491,6 +511,8 @@ const create = async (req, res) => {
       design,
       subfinish,
       subsuitable,
+      leadtime: leadtimeArr,
+      leadtime,
       vendor,
       groupcode,
       color,
@@ -619,6 +641,18 @@ const update = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = { ...req.body };
+
+    // Normalize leadtime in updateData: allow single string or array, store as array of trimmed strings
+    if (typeof updateData.leadtime !== "undefined") {
+      const lt = updateData.leadtime;
+      const arr = Array.isArray(lt) ? lt : [lt];
+      const normalized = arr
+        .map((v) => (v == null ? "" : String(v)))
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (normalized.length > 0) updateData.leadtime = normalized;
+      else delete updateData.leadtime;
+    }
 
     // Normalize req.files (multer.any() => array) into { [fieldname]: File[] }
     if (Array.isArray(req.files)) {
@@ -1018,6 +1052,55 @@ const getProductsByVendor = async (req, res, next) => {
   }
 };
 
+// GET PRODUCTS BY PRODUCT TAG (case-insensitive match against items in productTag array)
+const productByProductTag = async (req, res, next) => {
+  try {
+    const tag = (
+      req.params.productTag ||
+      req.query.productTag ||
+      req.body.productTag ||
+      ""
+    )
+      .toString()
+      .trim();
+    if (!tag) {
+      return res
+        .status(400)
+        .json({ status: 0, message: "productTag is required" });
+    }
+
+    // Escape regex special characters for safety
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const safeTag = escapeRegex(tag);
+
+    // Match any array element equal to the tag (case-insensitive)
+    const regex = new RegExp(`^${safeTag}$`, "i");
+    const products = await Product.find({ productTag: { $in: [regex] } })
+      .populate("category", "name")
+      .populate("substructure", "name")
+      .populate("design", "name")
+      .populate("content", "name")
+      .populate("subfinish", "name")
+      .populate("vendor", "name")
+      .populate("groupcode", "name")
+      .populate("color", "name")
+      .populate("motif", "name")
+      .lean();
+
+    if (!products || products.length === 0) {
+      return res
+        .status(404)
+        .json({ status: 0, message: "No products found for this productTag" });
+    }
+
+    return res
+      .status(200)
+      .json({ status: 1, total: products.length, data: products });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // GET PRODUCTS BY GSM RANGE
 const getProductsByGsmValue = async (req, res, next) => {
   const value = Number(req.params.value);
@@ -1210,171 +1293,9 @@ const getPublicProductBySlug = async (req, res, next) => {
   }
 };
 
-// Get popular products
-const getPopularProducts = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    const [products, total] = await Promise.all([
-      Product.find({
-        popularproduct: true,
-        status: { $ne: "inactive" },
-      })
-        .select("-__v -createdAt -updatedAt")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Product.countDocuments({
-        popularproduct: true,
-        status: { $ne: "inactive" },
-      }),
-    ]);
-
-    res.status(200).json({
-      success: true,
-      count: products.length,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      data: products,
-    });
-  } catch (error) {
-    console.error("Error fetching popular products:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching popular products",
-      error: error.message,
-    });
-  }
-};
-
-// Get top rated products
-const getTopRatedProducts = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    const [products, total] = await Promise.all([
-      Product.find({
-        topratedproduct: true,
-        status: { $ne: "inactive" },
-        rating_value: { $gte: 4 },
-      })
-        .select("-__v -createdAt -updatedAt")
-        .sort({ rating_value: -1, rating_count: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Product.countDocuments({
-        topratedproduct: true,
-        status: { $ne: "inactive" },
-        rating_value: { $gte: 4 },
-      }),
-    ]);
-
-    res.status(200).json({
-      success: true,
-      count: products.length,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      data: products,
-    });
-  } catch (error) {
-    console.error("Error fetching top rated products:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching top rated products",
-      error: error.message,
-    });
-  }
-};
-
-// Get landing page products
-const getLandingPageProducts = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    const [products, total] = await Promise.all([
-      Product.find({
-        landingPageProduct: true,
-        status: { $ne: "inactive" },
-      })
-        .select("-__v -createdAt -updatedAt")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Product.countDocuments({
-        landingPageProduct: true,
-        status: { $ne: "inactive" },
-      }),
-    ]);
-
-    res.status(200).json({
-      success: true,
-      count: products.length,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      data: products,
-    });
-  } catch (error) {
-    console.error("Error fetching landing page products:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching landing page products",
-      error: error.message,
-    });
-  }
-};
-
-// Get shopy products
-const getShopyProducts = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    const [products, total] = await Promise.all([
-      Product.find({
-        shopyProduct: true,
-        status: { $ne: "inactive" },
-      })
-        .select("-__v -createdAt -updatedAt")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Product.countDocuments({
-        shopyProduct: true,
-        status: { $ne: "inactive" },
-      }),
-    ]);
-
-    res.status(200).json({
-      success: true,
-      count: products.length,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      data: products,
-    });
-  } catch (error) {
-    console.error("Error fetching shopy products:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching shopy products",
-      error: error.message,
-    });
-  }
-};
+// Note: Popular/top-rated/landing/shopy product flags and endpoints
+// have been removed from the Product schema. Corresponding
+// endpoints were removed to avoid referencing deleted fields.
 
 // Get product by productIdentifier
 const getproductByProductIdentifier = async (req, res) => {
@@ -1426,6 +1347,7 @@ module.exports = {
   getProductsByColor,
   getProductsByMotif,
   getProductsByVendor,
+  productByProductTag,
   getProductsByGsmValue,
   getProductsByOzValue,
   getProductsByInchValue,
@@ -1433,10 +1355,6 @@ module.exports = {
   getProductBySlug,
   getAllProductsExceptVendor,
   getPublicProductBySlug,
-  getPopularProducts,
-  getTopRatedProducts,
-  getLandingPageProducts,
-  getShopyProducts,
   deleteProductImage,
 };
 

@@ -29,6 +29,9 @@ router.get("/public/slug/:slug", productController.getPublicProductBySlug);
 // SEARCH PRODUCTS BY NAME
 router.get("/search/:q", productController.searchProducts);
 
+// GET PRODUCTS BY PRODUCT TAG (case-insensitive, matches tags in productTag array)
+router.get("/producttag/:productTag", productController.productByProductTag);
+
 // GET ALL PRODUCTS BY GROUPCODE ID
 router.get("/groupcode/:groupcodeId", productController.getProductsByGroupcode);
 
@@ -66,18 +69,6 @@ router.get("/cm/:value", productController.getProductsByCmValue);
 
 // GET PRODUCT BY SLUG
 router.get("/slug/:slug", productController.getProductBySlug);
-
-// GET POPULAR PRODUCTS
-router.get("/popular", productController.getPopularProducts);
-
-// GET TOP RATED PRODUCTS
-router.get("/top-rated", productController.getTopRatedProducts);
-
-// GET LANDING PAGE PRODUCTS
-router.get("/landing-page", productController.getLandingPageProducts);
-
-// GET SHOPY PRODUCTS
-router.get("/shopy", productController.getShopyProducts);
 
 // DELETE PRODUCT IMAGE
 router.delete("/image/:id/:imageName", productController.deleteProductImage);

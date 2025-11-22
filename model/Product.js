@@ -154,30 +154,16 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },
     leadtime: {
-      type: Number,
+      type: [String],
       required: false,
+      default: [],
     },
     sku: {
       type: String,
       required: false,
       trim: true,
     },
-    popularproduct: {
-      type: Boolean,
-      default: false,
-    },
-    topratedproduct: {
-      type: Boolean,
-      default: false,
-    },
-    landingPageProduct: {
-      type: Boolean,
-      default: false,
-    },
-    shopyProduct: {
-      type: Boolean,
-      default: false,
-    },
+
     rating_value: {
       type: Number,
       required: false,
@@ -204,6 +190,12 @@ const productSchema = new mongoose.Schema(
     fullProductDescription: {
       type: String,
       required: false,
+    },
+    // Product tags — simple string array for searching/filtering
+    productTag: {
+      type: [String],
+      required: false,
+      default: [],
     },
   },
   { timestamps: true }
