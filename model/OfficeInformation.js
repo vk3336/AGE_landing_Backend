@@ -42,10 +42,7 @@ const officeInformationSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    microsofttoken: {
-      type: String,
-      required: true,
-    },
+
     companyEmployeeRange: {
       type: String,
       required: true,
@@ -71,24 +68,7 @@ const officeInformationSchema = new mongoose.Schema(
       required: true,
       enum: ["Bearer", "Basic"], // restricting to common auth schemes
     },
-    gaId: {
-      type: String,
-      required: true,
-    },
-    clarityId: {
-      type: String,
-      required: true,
-    },
-    companyLogoUrl: {
-      type: String,
-      required: true,
-      validate: {
-        validator: function (v) {
-          return /^https?:\/\/.+/.test(v);
-        },
-        message: "Logo URL must start with http:// or https://",
-      },
-    },
+
     facebook: {
       type: String,
       default: "",
@@ -141,6 +121,7 @@ const officeInformationSchema = new mongoose.Schema(
     },
 
    
+
   },
   {
     timestamps: true,

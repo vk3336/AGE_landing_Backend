@@ -18,11 +18,11 @@ const staticSeoSchema = new mongoose.Schema(
     },
     
     // Standard SEO Meta Tags
-    title: {
+    meta_title: {
       type: String,
       trim: true
     },
-    description: {
+    meta_description: {
       type: String,
       trim: true
     },
@@ -30,11 +30,7 @@ const staticSeoSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
-    robots: {
-      type: String,
-      trim: true,
-      default: 'index, follow'
-    },
+    
     canonical_url: {
       type: String,
       trim: true
@@ -49,54 +45,17 @@ const staticSeoSchema = new mongoose.Schema(
     },
 
     // HTML Meta Configuration
-    charset: {
-      type: String,
-      default: 'UTF-8',
-      trim: true
-    },
-    xUaCompatible: {
-      type: String,
-      default: 'IE=edge',
-      trim: true
-    },
-    viewport: {
-      type: String,
-      default: 'width=device-width, initial-scale=1.0',
-      trim: true
-    },
+   
+  
     contentLanguage: {
       type: String,
       default: 'en',
       trim: true
     },
-    googleSiteVerification: {
-      type: String,
-      trim: true
-    },
-    msValidate: {
-      type: String,
-      trim: true
-    },
-    themeColor: {
-      type: String,
-      trim: true
-    },
-    mobileWebAppCapable: {
-      type: String,
-      trim: true
-    },
-    appleStatusBarStyle: {
-      type: String,
-      trim: true
-    },
-    formatDetection: {
-      type: String,
-      trim: true
-    },
-    author_name: {
-      type: String,
-      trim: true
-    },
+    
+    
+   
+   
 
     // Open Graph Meta Tags
     ogLocale: {
@@ -162,53 +121,20 @@ const staticSeoSchema = new mongoose.Schema(
       player_height: { type: Number },
     },
 
-    // Hreflang / i18n
-    hreflang: {
-      type: String,
-      trim: true
-    },
-    x_default: {
-      type: String,
-      trim: true
-    },
+   
 
     // JSON-LD Structured Data
     VideoJsonLd: {
       type: String,
       trim: true
     },
-    LogoJsonLd: {
-      type: String,
-      trim: true
-    },
-    LogoJsonLdcontext: { 
-      type: String, 
-      trim: true 
-    },
-    LogoJsonLdtype: { 
-      type: String, 
-      trim: true 
-    },
-    logoJsonLdurl: { 
-      type: String, 
-      trim: true 
-    },
-    logoJsonLdwidth: { 
-      type: String, 
-      trim: true 
-    },
-    logoJsonLdheight: { 
-      type: String, 
-      trim: true 
-    },
+    
+    
     BreadcrumbJsonLd: {
       type: String,
       trim: true
     },
-    LocalBusinessJsonLd: {
-      type: String,
-      trim: true
-    },
+   
 
     // Status
     status: {

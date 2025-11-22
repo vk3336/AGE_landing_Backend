@@ -197,6 +197,24 @@ const productSchema = new mongoose.Schema(
       required: false,
       default: [],
     },
+    ogType: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+   
+    twitterCard: {
+      type: String,
+      trim: true,
+      default:"summary_large_image"
+    },
+    
+    // --- Open Graph Fields ---
+    ogImage_twitterimage: {
+      type: String,
+      required: false,
+      trim: true,
+    },
   },
   { timestamps: true }
 );

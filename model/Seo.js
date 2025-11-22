@@ -13,16 +13,7 @@ const seoSchema = new mongoose.Schema(
       required: false,
     },
     // Keeping locationCode for backward compatibility
-    locationCode: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    productdescription: {
-      type: String,
-      required: false,
-      trim: true,
-    },
+    
     slug: {
       type: String,
       required: false,
@@ -35,41 +26,20 @@ const seoSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
-    ogUrl: {
-      type: String,
-      required: false,
-      trim: true,
-    },
+    
     excerpt: {
       type: String,
       required: false,
       trim: true,
     },
-    description_html: {
-      type: String,
-      required: false,
-    },
-    charset: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    xUaCompatible: {
+    
+    
+    meta_og_twitter_title_product_location: {
       type: String,
       required: false,
       trim: true,
     },
-    viewport: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    title: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    description: {
+    meta_og_twitter_description_product_location: {
       type: String,
       required: false,
       trim: true,
@@ -84,97 +54,20 @@ const seoSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
-    robots: {
-      type: String,
-      required: false,
-      trim: true,
-    },
+    
     contentLanguage: {
       type: String,
       required: false,
       trim: true,
     },
-    themeColor: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    mobileWebAppCapable: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    appleStatusBarStyle: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    formatDetection: {
-      type: String,
-      required: false,
-      trim: true,
-    },
+   
     ogLocale: {
       type: String,
       required: false,
       trim: true,
     },
-    ogTitle: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    ogDescription: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    ogType: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    ogSiteName: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    twitterCard: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    twitterSite: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    twitterTitle: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    twitterDescription: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    hreflang: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    author_name: {
-      type: String,
-      required: false,
-      trim: true,
-    },
-    // --- Open Graph Fields ---
-    ogImage: {
-      type: String,
-      required: false,
-      trim: true,
-    },
+   
+    
     ogVideoUrl: {
       type: String,
       required: false,
@@ -199,12 +92,7 @@ const seoSchema = new mongoose.Schema(
       required: false,
     },
 
-    // --- Twitter Fields ---
-    twitterImage: {
-      type: String,
-      required: false,
-      trim: true,
-    },
+   
     twitterPlayer: {
       type: String,
       required: false,
