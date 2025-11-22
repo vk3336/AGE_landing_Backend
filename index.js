@@ -24,6 +24,7 @@ const subfinishRoutes = require("./routes/subfinishRoutes");
 const subsuitableRoutes = require("./routes/subsuitableRoutes");
 const productRoutes = require("./routes/productRoutes");
 const seoRoutes = require("./routes/seoRoutes");
+const defaultseoroutes =require("./routes/defaultseoRoutes");
 const motifRoutes = require("./routes/motifRoutes");
 const roleManagementRoutes = require("./routes/roleManagementRoutes");
 const topicpageseoRoutes = require("./routes/topicpageSeoRoutes");
@@ -227,6 +228,8 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/subsuitable`, subsuitableRoutes);
   app.use(`${apiPath}/product`, productRoutes);
   app.use(`${apiPath}/seo`, seoRoutes);
+  app.use(`${apiPath}/defaultseo`, defaultseoroutes);
+  
   app.use(`${apiPath}/motif`, motifRoutes);
   app.use(`${apiPath}/roles`, roleManagementRoutes);
   app.use(`${apiPath}/topicpage-seo`, topicpageseoRoutes);
