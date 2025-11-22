@@ -62,11 +62,11 @@ const staticSeoSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
-    ogTitle: {
+    og_twitter_Title: {
       type: String,
       trim: true
     },
-    ogDescription: {
+    og_twitter_Description: {
       type: String,
       trim: true
     },
@@ -75,14 +75,8 @@ const staticSeoSchema = new mongoose.Schema(
       trim: true,
       default: 'website'
     },
-    ogSiteName: {
-      type: String,
-      trim: true
-    },
-    ogUrl: {
-      type: String,
-      trim: true
-    },
+   
+   
     openGraph: {
       images: [{
         type: String,
@@ -102,18 +96,8 @@ const staticSeoSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
-    twitterSite: {
-      type: String,
-      trim: true
-    },
-    twitterTitle: {
-      type: String,
-      trim: true
-    },
-    twitterDescription: {
-      type: String,
-      trim: true
-    },
+    
+   
     twitter: {
       image: { type: String, trim: true },
       player: { type: String, trim: true },
@@ -130,10 +114,7 @@ const staticSeoSchema = new mongoose.Schema(
     },
     
     
-    BreadcrumbJsonLd: {
-      type: String,
-      trim: true
-    },
+  
    
 
     // Status
