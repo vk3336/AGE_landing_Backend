@@ -29,6 +29,7 @@ const motifRoutes = require("./routes/motifRoutes");
 const roleManagementRoutes = require("./routes/roleManagementRoutes");
 const topicpageseoRoutes = require("./routes/topicpageSeoRoutes");
 const userRoutes = require("./routes/userRoutes");
+const authorRoute = require("./routes/authorRoutes");
 const dbRoutes = require("./routes/dbRoutes");
 const apiKeyMiddleware = require("./middleware/apiKeyMiddleware");
 
@@ -234,6 +235,8 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/roles`, roleManagementRoutes);
   app.use(`${apiPath}/topicpage-seo`, topicpageseoRoutes);
   app.use(`${apiPath}/users`, userRoutes);
+  app.use(`${apiPath}/author`, authorRoute);
+  
 
   // Locations
   app.use(`${apiPath}/countries`, countryRoutes);
