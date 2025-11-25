@@ -32,6 +32,7 @@ const Color = require("../model/Color");
 const Category = require("../model/Category");
 const Motif = require("../model/Motif");
 const Seo = require("../model/Seo");
+const Topicpage = require("../model/topicpage");
 const { cloudinaryServices } = require("../services/cloudinary.service.js");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });

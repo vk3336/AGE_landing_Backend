@@ -310,92 +310,6 @@ const deleteSeo = async (req, res) => {
   }
 };
 
-// Get popular products
-const getPopularProducts = async (req, res) => {
-  try {
-    const products = await Seo.find({ popularproduct: true })
-      .populate("product")
-      .sort({ createdAt: -1 });
-    res.status(200).json({ success: true, data: products });
-  } catch (error) {
-    console.error("Error fetching popular products:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching popular products",
-      error: error.message,
-    });
-  }
-};
-
-// Get landing page products
-const getLandingPageProducts = async (req, res) => {
-  try {
-    const products = await Seo.find({ landingPageProduct: true })
-      .populate("product")
-      .sort({ createdAt: -1 });
-    res.status(200).json({ success: true, data: products });
-  } catch (error) {
-    console.error("Error fetching landing page products:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching landing page products",
-      error: error.message,
-    });
-  }
-};
-
-// Get shopy products
-const getShopyProducts = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    const [products, total] = await Promise.all([
-      Seo.find({ shopyProduct: true })
-        .populate("product", "name image3")
-        .populate("location", "name")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Seo.countDocuments({ shopyProduct: true }),
-    ]);
-
-    res.json({
-      success: true,
-      count: products.length,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      data: products,
-    });
-  } catch (error) {
-    console.error("Error fetching shopy products:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-};
-
-// Get top rated products
-const getTopRatedProducts = async (req, res) => {
-  try {
-    const topRatedProducts = await Seo.find({ topratedproduct: true }).populate(
-      "product"
-    );
-    res.status(200).json({
-      success: true,
-      message: "Top rated products retrieved successfully",
-      data: topRatedProducts,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error getting top rated products",
-      error: error.message,
-    });
-  }
-};
-
 // Get SEO by slug
 const getSeoBySlug = async (req, res) => {
   try {
@@ -457,9 +371,6 @@ const getSeoByLocation = async (req, res) => {
     });
   }
 };
-
-
-
 
 // Get all SEO data without purchase price
 const getAllSeoPublic = async (req, res) => {
@@ -580,11 +491,13 @@ const getSeoByCountry = async (req, res) => {
     const { state, city, location: locationSlug } = req.query;
 
     // Find country by slug
-    const country = await mongoose.model('Country').findOne({ slug: countryslug });
+    const country = await mongoose
+      .model("Country")
+      .findOne({ slug: countryslug });
     if (!country) {
       return res.status(404).json({
         success: false,
-        message: 'Country not found with the given slug',
+        message: "Country not found with the given slug",
       });
     }
 
@@ -593,60 +506,68 @@ const getSeoByCountry = async (req, res) => {
       const locations = await Location.find(locationQuery);
       if (!locations || locations.length === 0) return [];
 
-      const locationIds = locations.map(loc => loc._id);
-      
+      const locationIds = locations.map((loc) => loc._id);
+
       return await Seo.find({
         location: { $in: locationIds },
       })
-      .populate({
-        path: 'product',
-        populate: [
-          { path: 'category', select: 'name slug' },
-          { path: 'substructure', select: 'name slug' },
-          { path: 'content', select: 'name slug' },
-          { path: 'design', select: 'name slug' },
-          { path: 'subfinish', select: 'name slug' },
-          { path: 'subsuitable', select: 'name slug' },
-          { path: 'vendor', select: 'name slug' },
-          { path: 'groupcode', select: 'name code' },
-          { path: 'color', select: 'name code' },
-          { path: 'motif', select: 'name slug' }
-        ]
-      })
-      .populate({
-        path: 'location',
-        populate: [
-          { path: 'country', select: 'name code slug', options: { lean: true } },
-          { path: 'state', select: 'name code slug', options: { lean: true } },
-          { path: 'city', select: 'name slug', options: { lean: true } }
-        ]
-      })
-      .lean();
+        .populate({
+          path: "product",
+          populate: [
+            { path: "category", select: "name slug" },
+            { path: "substructure", select: "name slug" },
+            { path: "content", select: "name slug" },
+            { path: "design", select: "name slug" },
+            { path: "subfinish", select: "name slug" },
+            { path: "subsuitable", select: "name slug" },
+            { path: "vendor", select: "name slug" },
+            { path: "groupcode", select: "name code" },
+            { path: "color", select: "name code" },
+            { path: "motif", select: "name slug" },
+          ],
+        })
+        .populate({
+          path: "location",
+          populate: [
+            {
+              path: "country",
+              select: "name code slug",
+              options: { lean: true },
+            },
+            {
+              path: "state",
+              select: "name code slug",
+              options: { lean: true },
+            },
+            { path: "city", select: "name slug", options: { lean: true } },
+          ],
+        })
+        .lean();
     };
 
     // Build location query based on provided parameters
     const locationQuery = { country: country._id };
-    
+
     if (state) {
-      const stateDoc = await mongoose.model('State').findOne({ 
+      const stateDoc = await mongoose.model("State").findOne({
         $or: [
           { slug: state },
-          { _id: mongoose.Types.ObjectId.isValid(state) ? state : null }
-        ]
+          { _id: mongoose.Types.ObjectId.isValid(state) ? state : null },
+        ],
       });
       if (stateDoc) locationQuery.state = stateDoc._id;
     }
-    
+
     if (city) {
-      const cityDoc = await mongoose.model('City').findOne({ 
+      const cityDoc = await mongoose.model("City").findOne({
         $or: [
           { slug: city },
-          { _id: mongoose.Types.ObjectId.isValid(city) ? city : null }
-        ]
+          { _id: mongoose.Types.ObjectId.isValid(city) ? city : null },
+        ],
       });
       if (cityDoc) locationQuery.city = cityDoc._id;
     }
-    
+
     if (locationSlug) {
       locationQuery.slug = locationSlug;
     }
@@ -655,38 +576,38 @@ const getSeoByCountry = async (req, res) => {
     const tryLocationQueries = async () => {
       // Try with full location query first (country + state + city + location)
       let seoDataList = await findAllSeoWithLocation(locationQuery);
-      
+
       // If no results, try without location slug
       if ((!seoDataList || seoDataList.length === 0) && locationSlug) {
         const queryWithoutLocation = { ...locationQuery };
         delete queryWithoutLocation.slug;
         seoDataList = await findAllSeoWithLocation(queryWithoutLocation);
-        
+
         // If still no results, try without city
         if ((!seoDataList || seoDataList.length === 0) && city) {
           const queryWithoutCity = { ...queryWithoutLocation };
           delete queryWithoutCity.city;
           seoDataList = await findAllSeoWithLocation(queryWithoutCity);
-          
+
           // If still no results, try with just country and state
           if ((!seoDataList || seoDataList.length === 0) && state) {
-            const queryWithJustState = { 
+            const queryWithJustState = {
               country: locationQuery.country,
-              state: locationQuery.state 
+              state: locationQuery.state,
             };
             seoDataList = await findAllSeoWithLocation(queryWithJustState);
           }
         }
       }
-      
+
       // If still no results, try with just the country
       if (!seoDataList || seoDataList.length === 0) {
         seoDataList = await findAllSeoWithLocation({ country: country._id });
       }
-      
+
       return seoDataList || [];
     };
-    
+
     // Find matching SEO data with fallback logic
     const seoDataList = await tryLocationQueries();
 
@@ -694,7 +615,7 @@ const getSeoByCountry = async (req, res) => {
     if (seoDataList.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No SEO data found for the given location criteria',
+        message: "No SEO data found for the given location criteria",
       });
     }
 
@@ -704,10 +625,10 @@ const getSeoByCountry = async (req, res) => {
       data: seoDataList,
     });
   } catch (error) {
-    console.error('Error fetching SEO data by country:', error);
+    console.error("Error fetching SEO data by country:", error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching SEO data by country',
+      message: "Error fetching SEO data by country",
       error: error.message,
     });
   }
@@ -723,16 +644,18 @@ const getSeoByProductAndCountry = async (req, res) => {
     if (!product) {
       return res.status(404).json({
         success: false,
-        message: 'Product not found with the given slug',
+        message: "Product not found with the given slug",
       });
     }
 
     // Find country by slug
-    const country = await mongoose.model('Country').findOne({ slug: countryslug });
+    const country = await mongoose
+      .model("Country")
+      .findOne({ slug: countryslug });
     if (!country) {
       return res.status(404).json({
         success: false,
-        message: 'Country not found with the given slug',
+        message: "Country not found with the given slug",
       });
     }
 
@@ -741,61 +664,69 @@ const getSeoByProductAndCountry = async (req, res) => {
       const locations = await Location.find(locationQuery);
       if (!locations || locations.length === 0) return [];
 
-      const locationIds = locations.map(loc => loc._id);
-      
+      const locationIds = locations.map((loc) => loc._id);
+
       return await Seo.find({
         product: product._id,
         location: { $in: locationIds },
       })
-      .populate({
-        path: 'product',
-        populate: [
-          { path: 'category', select: 'name slug' },
-          { path: 'substructure', select: 'name slug' },
-          { path: 'content', select: 'name slug' },
-          { path: 'design', select: 'name slug' },
-          { path: 'subfinish', select: 'name slug' },
-          { path: 'subsuitable', select: 'name slug' },
-          { path: 'vendor', select: 'name slug' },
-          { path: 'groupcode', select: 'name code' },
-          { path: 'color', select: 'name code' },
-          { path: 'motif', select: 'name slug' }
-        ]
-      })
-      .populate({
-        path: 'location',
-        populate: [
-          { path: 'country', select: 'name code slug', options: { lean: true } },
-          { path: 'state', select: 'name code slug', options: { lean: true } },
-          { path: 'city', select: 'name slug', options: { lean: true } }
-        ]
-      })
-      .lean();
+        .populate({
+          path: "product",
+          populate: [
+            { path: "category", select: "name slug" },
+            { path: "substructure", select: "name slug" },
+            { path: "content", select: "name slug" },
+            { path: "design", select: "name slug" },
+            { path: "subfinish", select: "name slug" },
+            { path: "subsuitable", select: "name slug" },
+            { path: "vendor", select: "name slug" },
+            { path: "groupcode", select: "name code" },
+            { path: "color", select: "name code" },
+            { path: "motif", select: "name slug" },
+          ],
+        })
+        .populate({
+          path: "location",
+          populate: [
+            {
+              path: "country",
+              select: "name code slug",
+              options: { lean: true },
+            },
+            {
+              path: "state",
+              select: "name code slug",
+              options: { lean: true },
+            },
+            { path: "city", select: "name slug", options: { lean: true } },
+          ],
+        })
+        .lean();
     };
 
     // Build location query based on provided parameters
     const locationQuery = { country: country._id };
-    
+
     if (state) {
-      const stateDoc = await mongoose.model('State').findOne({ 
+      const stateDoc = await mongoose.model("State").findOne({
         $or: [
           { slug: state },
-          { _id: mongoose.Types.ObjectId.isValid(state) ? state : null }
-        ]
+          { _id: mongoose.Types.ObjectId.isValid(state) ? state : null },
+        ],
       });
       if (stateDoc) locationQuery.state = stateDoc._id;
     }
-    
+
     if (city) {
-      const cityDoc = await mongoose.model('City').findOne({ 
+      const cityDoc = await mongoose.model("City").findOne({
         $or: [
           { slug: city },
-          { _id: mongoose.Types.ObjectId.isValid(city) ? city : null }
-        ]
+          { _id: mongoose.Types.ObjectId.isValid(city) ? city : null },
+        ],
       });
       if (cityDoc) locationQuery.city = cityDoc._id;
     }
-    
+
     if (locationSlug) {
       locationQuery.slug = locationSlug;
     }
@@ -804,38 +735,38 @@ const getSeoByProductAndCountry = async (req, res) => {
     const tryLocationQueries = async () => {
       // Try with full location query first (country + state + city + location)
       let seoDataList = await findAllSeoWithLocation(locationQuery);
-      
+
       // If no results, try without location slug
       if ((!seoDataList || seoDataList.length === 0) && locationSlug) {
         const queryWithoutLocation = { ...locationQuery };
         delete queryWithoutLocation.slug;
         seoDataList = await findAllSeoWithLocation(queryWithoutLocation);
-        
+
         // If still no results, try without city
         if ((!seoDataList || seoDataList.length === 0) && city) {
           const queryWithoutCity = { ...queryWithoutLocation };
           delete queryWithoutCity.city;
           seoDataList = await findAllSeoWithLocation(queryWithoutCity);
-          
+
           // If still no results, try with just country and state
           if ((!seoDataList || seoDataList.length === 0) && state) {
-            const queryWithJustState = { 
+            const queryWithJustState = {
               country: locationQuery.country,
-              state: locationQuery.state 
+              state: locationQuery.state,
             };
             seoDataList = await findAllSeoWithLocation(queryWithJustState);
           }
         }
       }
-      
+
       // If still no results, try with just the country
       if (!seoDataList || seoDataList.length === 0) {
         seoDataList = await findAllSeoWithLocation({ country: country._id });
       }
-      
+
       return seoDataList || [];
     };
-    
+
     // Find matching SEO data with fallback logic
     const seoDataList = await tryLocationQueries();
 
@@ -843,7 +774,8 @@ const getSeoByProductAndCountry = async (req, res) => {
     if (seoDataList.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No SEO data found for the given product and location criteria',
+        message:
+          "No SEO data found for the given product and location criteria",
       });
     }
 
@@ -853,10 +785,10 @@ const getSeoByProductAndCountry = async (req, res) => {
       data: seoDataList,
     });
   } catch (error) {
-    console.error('Error fetching SEO data:', error);
+    console.error("Error fetching SEO data:", error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching SEO data',
+      message: "Error fetching SEO data",
       error: error.message,
     });
   }
@@ -869,12 +801,10 @@ module.exports = {
   getSeoByProduct,
   updateSeo,
   deleteSeo,
-  getPopularProducts,
-  getTopRatedProducts,
-  getLandingPageProducts,
+
   getSeoBySlug,
   getSeoByLocation,
-  getShopyProducts,
+
   searchSeos,
   getAllSeoPublic,
   getSeoBySlugPublic,

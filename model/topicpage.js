@@ -123,6 +123,13 @@ const staticSeoSchema = new mongoose.Schema(
       enum: ['draft', 'published', 'archived'],
       default: 'draft',
     },
+
+    // Product References
+    producttag: {
+      type: [String],
+      default: [],
+      trim: true,
+    },
   },
   {
     timestamps: true,
