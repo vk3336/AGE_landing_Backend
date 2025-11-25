@@ -7,6 +7,8 @@ router.post(
   "/",
   productController.multiUpload,
   productController.handleColorArray,
+  productController.handleSubsuitableArray,
+  productController.handleLeadtimeArray,
   productController.validate,
   productController.create
 );
@@ -78,6 +80,8 @@ router.put(
   "/:id",
   productController.multiUpload,
   productController.handleColorArray,
+  productController.handleSubsuitableArray,
+  productController.handleLeadtimeArray,
   productController.validate,
   productController.update
 );

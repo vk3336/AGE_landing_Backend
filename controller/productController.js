@@ -22,6 +22,59 @@ const handleColorArray = (req, res, next) => {
   next();
 };
 
+// Middleware to handle subsuitable array from form data
+const handleSubsuitableArray = (req, res, next) => {
+  // Handle subsuitable[] field (from form data)
+  if (req.body["subsuitable[]"]) {
+    // Convert to array if it's a single value
+    req.body.subsuitable = Array.isArray(req.body["subsuitable[]"])
+      ? req.body["subsuitable[]"]
+      : [req.body["subsuitable[]"]];
+    delete req.body["subsuitable[]"];
+  }
+  // Ensure subsuitable is always an array if provided
+  else if (req.body.subsuitable && !Array.isArray(req.body.subsuitable)) {
+    req.body.subsuitable = [req.body.subsuitable];
+  }
+  // Filter out any empty values
+  if (req.body.subsuitable) {
+    req.body.subsuitable = req.body.subsuitable.filter(Boolean);
+  }
+  next();
+};
+
+// Middleware to handle leadtime array from form data
+const handleLeadtimeArray = (req, res, next) => {
+  // Handle leadtime[] field (from form data)
+  if (req.body["leadtime[]"]) {
+    // Convert to array if it's a single value
+    req.body.leadtime = Array.isArray(req.body["leadtime[]"])
+      ? req.body["leadtime[]"]
+      : [req.body["leadtime[]"]];
+    delete req.body["leadtime[]"];
+  }
+  // Ensure leadtime is always an array if provided
+  else if (req.body.leadtime && !Array.isArray(req.body.leadtime)) {
+    // Handle comma-separated strings
+    if (
+      typeof req.body.leadtime === "string" &&
+      req.body.leadtime.includes(",")
+    ) {
+      req.body.leadtime = req.body.leadtime
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    } else {
+      req.body.leadtime = [req.body.leadtime];
+    }
+  }
+  // Filter out any empty values
+  if (req.body.leadtime) {
+    req.body.leadtime = req.body.leadtime.filter(Boolean);
+  }
+  next();
+};
+
 const Substructure = require("../model/Substructure");
 const Content = require("../model/Content");
 const Design = require("../model/Design");
@@ -1333,6 +1386,8 @@ module.exports = {
   upload,
   multiUpload,
   handleColorArray,
+  handleSubsuitableArray,
+  handleLeadtimeArray,
   create,
   viewAll,
   viewById,
