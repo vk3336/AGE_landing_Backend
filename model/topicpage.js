@@ -112,11 +112,12 @@ const staticSeoSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
-    
-    
-  
-   
-
+    videourl:{
+      type: String,
+    },
+    videoalt:{
+      type:String
+    },
     // Status
     status: {
       type: String,
