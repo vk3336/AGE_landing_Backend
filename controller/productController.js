@@ -181,6 +181,16 @@ const validate = [
     .optional()
     .isString()
     .withMessage("Each leadtime item must be a string"),
+  // Video URL (optional) - if provided should be a valid URL
+  body("videourl")
+    .optional()
+    .isURL()
+    .withMessage("videourl must be a valid URL"),
+  // Video alt text (optional)
+  body("videoalt")
+    .optional()
+    .isString()
+    .withMessage("videoalt must be a string"),
 ];
 
 const create = async (req, res) => {
@@ -277,6 +287,8 @@ const create = async (req, res) => {
       altimg2,
       altimg3,
       altvideo,
+      videourl,
+      videoalt,
     } = req.body;
     // quantity removed — no longer stored on Product
 
@@ -558,6 +570,7 @@ const create = async (req, res) => {
       image1: image1Url,
       image2: image2Url,
       video: videoUrl,
+      videourl: videourl || videoUrl,
       videoThumbnail: videoThumbnailUrl,
       category,
       substructure,
@@ -586,6 +599,7 @@ const create = async (req, res) => {
       altimg2,
       altimg3,
       altvideo,
+      videoalt: videoalt || altvideo,
     });
 
     await product.save();

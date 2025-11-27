@@ -20,13 +20,41 @@ exports.searchGroupcodes = async (req, res, next) => {
   }
 };
 
-exports.validate = [
+// Validator for creating a groupcode (name required)
+exports.validateCreate = [
   body("name")
     .trim()
     .isLength({ min: 2 })
     .withMessage("Name must be at least 2 characters")
     .notEmpty()
     .withMessage("Name is required"),
+  // Optional videourl (must be a URL if provided)
+  body("videourl")
+    .optional()
+    .isURL()
+    .withMessage("videourl must be a valid URL"),
+  // Optional videoalt text
+  body("videoalt")
+    .optional()
+    .isString()
+    .withMessage("videoalt must be a string"),
+];
+
+// Validator for updating a groupcode (name optional)
+exports.validateUpdate = [
+  body("name")
+    .optional()
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage("Name must be at least 2 characters"),
+  body("videourl")
+    .optional()
+    .isURL()
+    .withMessage("videourl must be a valid URL"),
+  body("videoalt")
+    .optional()
+    .isString()
+    .withMessage("videoalt must be a string"),
 ];
 
 exports.create = async (req, res) => {
@@ -38,7 +66,13 @@ exports.create = async (req, res) => {
     return res.status(400).json({ success: false, errors: errors.array() });
   }
   try {
-    const { name, altimg = "", altvideo = "" } = req.body;
+    const {
+      name,
+      altimg = "",
+      altvideo = "",
+      videourl = "",
+      videoalt = "",
+    } = req.body;
     let imgUrl = "";
     let videoUrl = "";
     // Upload image if present
@@ -66,6 +100,8 @@ exports.create = async (req, res) => {
       altimg,
       video: videoUrl,
       altvideo,
+      videourl: videourl || videoUrl,
+      videoalt: videoalt || altvideo,
     });
     await newGroupcode.save();
     res.status(201).json({
@@ -95,7 +131,7 @@ exports.viewAll = async (req, res) => {
       .skip(skip)
       .limit(limit)
       .lean();
-      
+
     res.status(200).json({ success: true, data: items });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -122,11 +158,14 @@ exports.update = async (req, res) => {
   }
   try {
     const { id } = req.params;
-    const { name, altimg, altvideo } = req.body;
+    const { name, altimg, altvideo, videourl, videoalt } = req.body;
     const oldGroupcode = await Groupcode.findById(id).lean();
     let imgUrl = oldGroupcode?.img || "";
     let videoUrl = oldGroupcode?.video || "";
-    
+    // preserve existing videourl/videoalt unless overwritten
+    let finalVideoUrl = oldGroupcode?.videourl || "";
+    let finalVideoAlt = oldGroupcode?.videoalt || oldGroupcode?.altvideo || "";
+
     // Upload new image if present
     if (req.files && req.files.img && req.files.img[0]) {
       const imgResult = await cloudinaryServices.cloudinaryImageUpload(
@@ -139,7 +178,7 @@ exports.update = async (req, res) => {
         imgUrl = imgResult.secure_url;
       }
     }
-    
+
     // Upload new video if present
     if (req.files && req.files.video && req.files.video[0]) {
       const videoResult = await cloudinaryServices.cloudinaryImageUpload(
@@ -155,28 +194,35 @@ exports.update = async (req, res) => {
         videoUrl = videoResult.secure_url;
       }
     }
-    
+
+    // If a new video was uploaded, prefer its URL for videourl unless an explicit videourl was provided
+    if (videoUrl) finalVideoUrl = videoUrl;
+    // If client provided explicit videourl in body, prefer that
+    if (videourl !== undefined && videourl !== "") finalVideoUrl = videourl;
+    // Determine final alt text for video: prefer explicit videoalt, then altvideo from body, then existing
+    if (videoalt !== undefined && videoalt !== "") finalVideoAlt = videoalt;
+    else if (altvideo !== undefined && altvideo !== "")
+      finalVideoAlt = altvideo;
+
     // Prepare update data
-    const updateData = { 
-      name, 
-      img: imgUrl, 
-      video: videoUrl 
+    const updateData = {
+      name,
+      img: imgUrl,
+      video: videoUrl,
+      videourl: finalVideoUrl,
+      videoalt: finalVideoAlt,
     };
-    
-    // Only update altimg and altvideo if they are provided
+    // Only set altimg if provided
     if (altimg !== undefined) updateData.altimg = altimg;
-    if (altvideo !== undefined) updateData.altvideo = altvideo;
-    
-    const updated = await Groupcode.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true }
-    );
-    
+
+    const updated = await Groupcode.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
+
     if (!updated) {
       return res.status(404).json({ success: false, message: "Not found" });
     }
-    
+
     res.status(200).json({ success: true, data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -288,6 +334,7 @@ module.exports = {
   update: exports.update,
   deleteById: exports.deleteById,
   deleteImage: exports.deleteImage,
-  validate: exports.validate,
+  validateCreate: exports.validateCreate,
+  validateUpdate: exports.validateUpdate,
   searchGroupcodes: exports.searchGroupcodes,
 };

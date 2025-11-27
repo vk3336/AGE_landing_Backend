@@ -27,6 +27,16 @@ const groupcodeSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
+    videourl: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    videoalt: {
+      type: String,
+      required: false,
+      trim: true,
+    },
   },
   { timestamps: true }
 );

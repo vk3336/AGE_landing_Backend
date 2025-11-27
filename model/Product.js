@@ -36,6 +36,11 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    videourl: {
+      type: String,
+      required: false,
+      trim: true,
+    },
     videoThumbnail: {
       type: String,
       required: false,
@@ -56,6 +61,11 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },
     altvideo: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    videoalt: {
       type: String,
       required: false,
       trim: true,
@@ -202,13 +212,13 @@ const productSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
-   
+
     twitterCard: {
       type: String,
       trim: true,
-      default:"summary_large_image"
+      default: "summary_large_image",
     },
-    
+
     // --- Open Graph Fields ---
     ogImage_twitterimage: {
       type: String,

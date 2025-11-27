@@ -10,7 +10,7 @@ router.post(
     { name: "img", maxCount: 1 },
     { name: "video", maxCount: 1 },
   ]),
-  groupcodeController.validate,
+  ...(groupcodeController.validateCreate || []),
   groupcodeController.create
 );
 router.get("/", groupcodeController.viewAll);
@@ -22,7 +22,7 @@ router.put(
     { name: "img", maxCount: 1 },
     { name: "video", maxCount: 1 },
   ]),
-  groupcodeController.validate,
+  ...(groupcodeController.validateUpdate || []),
   groupcodeController.update
 );
 router.delete("/:id", groupcodeController.deleteById);
