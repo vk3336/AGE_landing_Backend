@@ -75,6 +75,38 @@ const handleLeadtimeArray = (req, res, next) => {
   next();
 };
 
+// Middleware to handle productTag array from form data
+const handleProductTagArray = (req, res, next) => {
+  // Handle productTag[] field (from form data)
+  if (req.body["productTag[]"]) {
+    // Convert to array if it's a single value
+    req.body.productTag = Array.isArray(req.body["productTag[]"])
+      ? req.body["productTag[]"]
+      : [req.body["productTag[]"]];
+    delete req.body["productTag[]"];
+  }
+  // Ensure productTag is always an array if provided
+  else if (req.body.productTag && !Array.isArray(req.body.productTag)) {
+    // Handle comma-separated strings
+    if (
+      typeof req.body.productTag === "string" &&
+      req.body.productTag.includes(",")
+    ) {
+      req.body.productTag = req.body.productTag
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    } else {
+      req.body.productTag = [req.body.productTag];
+    }
+  }
+  // Filter out any empty values
+  if (req.body.productTag) {
+    req.body.productTag = req.body.productTag.filter(Boolean);
+  }
+  next();
+};
+
 const Substructure = require("../model/Substructure");
 const Content = require("../model/Content");
 const Design = require("../model/Design");
@@ -181,6 +213,15 @@ const validate = [
     .optional()
     .isString()
     .withMessage("Each leadtime item must be a string"),
+  // ProductTag should be an array of strings if provided
+  body("productTag")
+    .optional()
+    .isArray()
+    .withMessage("ProductTag must be an array"),
+  body("productTag.*")
+    .optional()
+    .isString()
+    .withMessage("Each productTag item must be a string"),
   // Video URL (optional) - if provided should be a valid URL
   body("videourl")
     .optional()
