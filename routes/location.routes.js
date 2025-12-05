@@ -2,6 +2,9 @@ const express = require("express");
 const locationController = require("../controller/location.controller");
 const router = express.Router();
 
+// Get locations for SEO dropdown (with cascading display names)
+router.get("/for-seo", locationController.getLocationsForSeo);
+
 // Get all locations
 router.get("/", locationController.getAllLocations);
 

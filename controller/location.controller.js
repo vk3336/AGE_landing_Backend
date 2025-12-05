@@ -114,6 +114,69 @@ exports.getAllLocations = async (req, res) => {
   }
 };
 
+// Get locations with cascading display names for SEO dropdown
+exports.getLocationsForSeo = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 1000;
+
+    // Get all locations with populated references
+    const locations = await Location.find()
+      .limit(limit)
+      .populate("country", "name")
+      .populate("state", "name")
+      .populate("city", "name")
+      .lean();
+
+    // Transform locations with cascading display logic
+    const transformedLocations = locations.map((location) => {
+      let displayName = "";
+
+      // Priority: location name > city > state > country
+      if (location.name && location.name.trim()) {
+        displayName = location.name;
+      } else if (location.city && location.city.name) {
+        displayName = location.city.name;
+      } else if (location.state && location.state.name) {
+        displayName = location.state.name;
+      } else if (location.country && location.country.name) {
+        displayName = location.country.name;
+      } else {
+        displayName = "Unknown Location";
+      }
+
+      return {
+        _id: location._id,
+        displayName,
+        name: location.name || "",
+        city: location.city ? location.city.name : "",
+        cityId: location.city ? location.city._id : null,
+        state: location.state ? location.state.name : "",
+        stateId: location.state ? location.state._id : null,
+        country: location.country ? location.country.name : "",
+        countryId: location.country ? location.country._id : null,
+        pincode: location.pincode || "",
+        slug: location.slug || "",
+      };
+    });
+
+    // Sort by displayName
+    transformedLocations.sort((a, b) =>
+      a.displayName.localeCompare(b.displayName)
+    );
+
+    res.status(200).json({
+      status: "success",
+      results: transformedLocations.length,
+      data: transformedLocations,
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
 // Get a single location by ID or slug
 exports.getLocation = async (req, res) => {
   try {
