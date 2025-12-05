@@ -794,6 +794,63 @@ const getSeoByProductAndCountry = async (req, res) => {
   }
 };
 
+// Get SEO details with specific product fields for products with tag "astro"
+const getSeoDetailsForAstroProducts = async (req, res) => {
+  try {
+    // Find all SEO entries and populate product
+    const seoList = await Seo.find()
+      .populate({
+        path: "product",
+        match: { productTag: "astro" }, // Only match products with "astro" tag
+        select:
+          "image1 image2 altimg1 altimg2 substructure content design subfinish subsuitable color motif gsm oz cm inch leadtime rating_count rating_value videourl videoalt ogType twitterCard",
+        populate: [
+          { path: "substructure", select: "name slug" },
+          { path: "content", select: "name description" },
+          { path: "design", select: "name slug" },
+          { path: "subfinish", select: "name slug" },
+          { path: "subsuitable", select: "name slug" },
+          { path: "color", select: "name code" },
+          { path: "motif", select: "name slug" },
+        ],
+      })
+      .populate({
+        path: "location",
+        select: "name slug country state city",
+        populate: [
+          { path: "country", select: "name code slug" },
+          { path: "state", select: "name code slug" },
+          { path: "city", select: "name slug" },
+        ],
+      })
+      .lean();
+
+    // Filter out SEO entries where product is null (didn't match the "astro" tag)
+    const filteredSeoList = seoList.filter((seo) => seo.product !== null);
+
+    if (filteredSeoList.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No SEO data found for products with tag "astro"',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message:
+        'SEO details for products with tag "astro" retrieved successfully',
+      count: filteredSeoList.length,
+      data: filteredSeoList,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error getting SEO details for astro products",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createSeo,
   getAllSeo,
@@ -810,4 +867,5 @@ module.exports = {
   getSeoBySlugPublic,
   getSeoByProductAndCountry,
   getSeoByCountry,
+  getSeoDetailsForAstroProducts,
 };

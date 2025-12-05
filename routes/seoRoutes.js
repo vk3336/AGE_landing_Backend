@@ -13,7 +13,8 @@ const {
   getAllSeoPublic,
   getSeoBySlugPublic,
   getSeoByProductAndCountry,
-  getSeoByCountry
+  getSeoByCountry,
+  getSeoDetailsForAstroProducts,
 } = require("../controller/seoController");
 
 router.get("/search/:q", searchSeos);
@@ -30,6 +31,8 @@ router.get("/public", getAllSeoPublic);
 // Get SEO by slug without purchase price (public)
 router.get("/public/slug/:slug", getSeoBySlugPublic);
 
+// Get SEO details for products with tag "astro"
+router.get("/astro/products", getSeoDetailsForAstroProducts);
 
 // Get SEO by slug"
 router.get("/slug/:slug", getSeoBySlug);
