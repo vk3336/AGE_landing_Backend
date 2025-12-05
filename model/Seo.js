@@ -13,7 +13,7 @@ const seoSchema = new mongoose.Schema(
       required: false,
     },
     // Keeping locationCode for backward compatibility
-    
+
     slug: {
       type: String,
       required: false,
@@ -26,14 +26,13 @@ const seoSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
-    
+
     excerpt: {
       type: String,
       required: false,
       trim: true,
     },
-    
-    
+
     meta_og_twitter_title_product_location: {
       type: String,
       required: false,
@@ -54,20 +53,19 @@ const seoSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
-    
+
     contentLanguage: {
       type: String,
       required: false,
       trim: true,
     },
-   
+
     ogLocale: {
       type: String,
       required: false,
       trim: true,
     },
-   
-    
+
     ogVideoUrl: {
       type: String,
       required: false,
@@ -92,7 +90,6 @@ const seoSchema = new mongoose.Schema(
       required: false,
     },
 
-   
     twitterPlayer: {
       type: String,
       required: false,
@@ -107,8 +104,6 @@ const seoSchema = new mongoose.Schema(
       required: false,
     },
     VideoJsonLd: { type: String, trim: true },
-
-    
   },
   { timestamps: true }
 );
@@ -124,7 +119,6 @@ seoSchema.index({ rating_value: -1 });
 seoSchema.index({ purchasePrice: 1 });
 seoSchema.index({ salesPrice: 1 });
 seoSchema.index({ sku: 1 });
-seoSchema.index({ productIdentifier: 1 });
 
 // Handle slug validation and generation before saving
 seoSchema.pre("save", async function (next) {
