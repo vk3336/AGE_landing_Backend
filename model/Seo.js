@@ -209,4 +209,4 @@ seoSchema.pre("save", async function (next) {
   }
 });
 
-module.exports = mongoose.model("Seo", seoSchema);
+module.exports = mongoose.model("productandlocation", seoSchema);
