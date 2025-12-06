@@ -225,6 +225,68 @@ const productSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
+
+    // --- Product Q&A Fields ---
+    productquestion1: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    productquestion2: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    productquestion3: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    productquestion4: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    productquestion5: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    productquestion6: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    productanswer1: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    productanswer2: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    productanswer3: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    productanswer4: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    productanswer5: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    productanswer6: {
+      type: String,
+      required: false,
+      trim: true,
+    },
   },
   { timestamps: true }
 );

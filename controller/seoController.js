@@ -803,7 +803,7 @@ const getSeoDetailsForAstroProducts = async (req, res) => {
         path: "product",
         match: { productTag: "astro" }, // Only match products with "astro" tag
         select:
-          "image1 image2 altimg1 altimg2 substructure content design subfinish subsuitable color motif gsm oz cm inch leadtime rating_count rating_value videourl videoalt ogType twitterCard",
+          "image1 image2 altimg1 altimg2 substructure content design subfinish subsuitable color motif gsm oz cm inch leadtime rating_count rating_value videourl videoalt ogType twitterCard productquestion1 productquestion2 productquestion3 productquestion4 productquestion5 productquestion6 productanswer1 productanswer2 productanswer3 productanswer4 productanswer5 productanswer6",
         populate: [
           { path: "substructure", select: "name slug" },
           { path: "content", select: "name description" },

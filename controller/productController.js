@@ -232,6 +232,55 @@ const validate = [
     .optional()
     .isString()
     .withMessage("videoalt must be a string"),
+  // Product Q&A fields (all optional)
+  body("productquestion1")
+    .optional()
+    .isString()
+    .withMessage("productquestion1 must be a string"),
+  body("productquestion2")
+    .optional()
+    .isString()
+    .withMessage("productquestion2 must be a string"),
+  body("productquestion3")
+    .optional()
+    .isString()
+    .withMessage("productquestion3 must be a string"),
+  body("productquestion4")
+    .optional()
+    .isString()
+    .withMessage("productquestion4 must be a string"),
+  body("productquestion5")
+    .optional()
+    .isString()
+    .withMessage("productquestion5 must be a string"),
+  body("productquestion6")
+    .optional()
+    .isString()
+    .withMessage("productquestion6 must be a string"),
+  body("productanswer1")
+    .optional()
+    .isString()
+    .withMessage("productanswer1 must be a string"),
+  body("productanswer2")
+    .optional()
+    .isString()
+    .withMessage("productanswer2 must be a string"),
+  body("productanswer3")
+    .optional()
+    .isString()
+    .withMessage("productanswer3 must be a string"),
+  body("productanswer4")
+    .optional()
+    .isString()
+    .withMessage("productanswer4 must be a string"),
+  body("productanswer5")
+    .optional()
+    .isString()
+    .withMessage("productanswer5 must be a string"),
+  body("productanswer6")
+    .optional()
+    .isString()
+    .withMessage("productanswer6 must be a string"),
 ];
 
 const create = async (req, res) => {
@@ -330,6 +379,18 @@ const create = async (req, res) => {
       altvideo,
       videourl,
       videoalt,
+      productquestion1,
+      productquestion2,
+      productquestion3,
+      productquestion4,
+      productquestion5,
+      productquestion6,
+      productanswer1,
+      productanswer2,
+      productanswer3,
+      productanswer4,
+      productanswer5,
+      productanswer6,
     } = req.body;
     // quantity removed — no longer stored on Product
 
@@ -641,6 +702,18 @@ const create = async (req, res) => {
       altimg3,
       altvideo,
       videoalt: videoalt || altvideo,
+      productquestion1,
+      productquestion2,
+      productquestion3,
+      productquestion4,
+      productquestion5,
+      productquestion6,
+      productanswer1,
+      productanswer2,
+      productanswer3,
+      productanswer4,
+      productanswer5,
+      productanswer6,
     });
 
     await product.save();
