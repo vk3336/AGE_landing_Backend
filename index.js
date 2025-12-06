@@ -26,7 +26,7 @@ const productRoutes = require("./routes/productRoutes");
 const seoRoutes = require("./routes/seoRoutes");
 const productandlocationRoutes = require("./routes/seoRoutes");
 
-const defaultseoroutes =require("./routes/defaultseoRoutes");
+const defaultseoroutes = require("./routes/defaultseoRoutes");
 const motifRoutes = require("./routes/motifRoutes");
 const roleManagementRoutes = require("./routes/roleManagementRoutes");
 const topicpageseoRoutes = require("./routes/topicpageSeoRoutes");
@@ -40,7 +40,7 @@ const countryRoutes = require("./routes/country.routes");
 const stateRoutes = require("./routes/state.routes");
 const cityRoutes = require("./routes/city.routes");
 const locationRoutes = require("./routes/location.routes");
-const locationDetailRoutes= require("./routes/locationDetailRoutes");
+const locationDetailRoutes = require("./routes/locationDetailRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const landingchatRoute = require("./routes/landingchatRoute");
 const aboutUsRoutes = require("./routes/aboutUsRoutes");
@@ -50,15 +50,16 @@ const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 
 const blogRoutes = require("./routes/blogRoutes");
+const faqaRoutes = require("./routes/faqaRoutes");
 const app = express();
 const port = process.env.PORT || 7000;
 
 // Session configuration with MongoDB store
-const MongoStore = require('connect-mongo');
+const MongoStore = require("connect-mongo");
 
 // Ensure session secret is set
 if (!process.env.SESSION_SECRET) {
-  console.error('FATAL: SESSION_SECRET is not defined');
+  console.error("FATAL: SESSION_SECRET is not defined");
   process.exit(1);
 }
 
@@ -68,26 +69,25 @@ const sessionConfig = {
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+    secure: process.env.NODE_ENV === "production", // Use secure cookies in production
     httpOnly: true,
     maxAge: parseInt(process.env.SESSION_LIFETIME) || 24 * 60 * 60 * 1000, // 24 hours default
-    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax'
+    sameSite: process.env.NODE_ENV === "production" ? "lax" : "lax",
   },
   store: MongoStore.create({
     mongoUrl: process.env.MONGODB_URI,
-    collectionName: 'sessions',
-    ttl: parseInt(process.env.SESSION_LIFETIME) / 1000 || 24 * 60 * 60 // Convert to seconds
-  })
+    collectionName: "sessions",
+    ttl: parseInt(process.env.SESSION_LIFETIME) / 1000 || 24 * 60 * 60, // Convert to seconds
+  }),
 };
 
 // Trust first proxy in production
-if (process.env.NODE_ENV === 'production') {
-  app.set('trust proxy', 1);
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
   sessionConfig.cookie.secure = true;
 }
 
 app.use(session(sessionConfig));
-
 
 // --- DB connection
 connectDB()
@@ -233,13 +233,12 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/seo`, seoRoutes);
   app.use(`${apiPath}/productandlocation`, productandlocationRoutes);
   app.use(`${apiPath}/defaultseo`, defaultseoroutes);
-  
+
   app.use(`${apiPath}/motif`, motifRoutes);
   app.use(`${apiPath}/roles`, roleManagementRoutes);
   app.use(`${apiPath}/topicpage-seo`, topicpageseoRoutes);
   app.use(`${apiPath}/users`, userRoutes);
   app.use(`${apiPath}/author`, authorRoute);
-  
 
   // Locations
   app.use(`${apiPath}/countries`, countryRoutes);
@@ -256,6 +255,7 @@ const registerRoutes = (basePath) => {
   app.use(`${apiPath}/orders`, orderRoutes);
   app.use(`${apiPath}/db`, dbRoutes);
   app.use(`${apiPath}/blogs`, blogRoutes);
+  app.use(`${apiPath}/faqa`, faqaRoutes);
 };
 
 // --- Register routes for each base path (e.g., /api)
