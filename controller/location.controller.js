@@ -30,6 +30,18 @@ exports.createLocation = async (req, res) => {
       language,
       longitude,
       latitude,
+      locationquestion1,
+      locationquestion2,
+      locationquestion3,
+      locationquestion4,
+      locationquestion5,
+      locationquestion6,
+      locationanswer1,
+      locationanswer2,
+      locationanswer3,
+      locationanswer4,
+      locationanswer5,
+      locationanswer6,
     } = req.body;
 
     const location = await Location.create({
@@ -42,6 +54,18 @@ exports.createLocation = async (req, res) => {
       language,
       longitude,
       latitude,
+      locationquestion1,
+      locationquestion2,
+      locationquestion3,
+      locationquestion4,
+      locationquestion5,
+      locationquestion6,
+      locationanswer1,
+      locationanswer2,
+      locationanswer3,
+      locationanswer4,
+      locationanswer5,
+      locationanswer6,
     });
 
     res.status(201).json({
@@ -252,6 +276,18 @@ exports.updateLocation = async (req, res) => {
       language,
       longitude,
       latitude,
+      locationquestion1,
+      locationquestion2,
+      locationquestion3,
+      locationquestion4,
+      locationquestion5,
+      locationquestion6,
+      locationanswer1,
+      locationanswer2,
+      locationanswer3,
+      locationanswer4,
+      locationanswer5,
+      locationanswer6,
     } = req.body;
 
     // Prepare update object with only the fields that are provided
@@ -265,6 +301,30 @@ exports.updateLocation = async (req, res) => {
     if (language) updateData.language = language;
     if (longitude !== undefined) updateData.longitude = longitude;
     if (latitude !== undefined) updateData.latitude = latitude;
+    if (locationquestion1 !== undefined)
+      updateData.locationquestion1 = locationquestion1;
+    if (locationquestion2 !== undefined)
+      updateData.locationquestion2 = locationquestion2;
+    if (locationquestion3 !== undefined)
+      updateData.locationquestion3 = locationquestion3;
+    if (locationquestion4 !== undefined)
+      updateData.locationquestion4 = locationquestion4;
+    if (locationquestion5 !== undefined)
+      updateData.locationquestion5 = locationquestion5;
+    if (locationquestion6 !== undefined)
+      updateData.locationquestion6 = locationquestion6;
+    if (locationanswer1 !== undefined)
+      updateData.locationanswer1 = locationanswer1;
+    if (locationanswer2 !== undefined)
+      updateData.locationanswer2 = locationanswer2;
+    if (locationanswer3 !== undefined)
+      updateData.locationanswer3 = locationanswer3;
+    if (locationanswer4 !== undefined)
+      updateData.locationanswer4 = locationanswer4;
+    if (locationanswer5 !== undefined)
+      updateData.locationanswer5 = locationanswer5;
+    if (locationanswer6 !== undefined)
+      updateData.locationanswer6 = locationanswer6;
     const location = await Location.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,

@@ -43,6 +43,54 @@ const locationSchema = new mongoose.Schema(
       type: Number,
       trim: true,
     },
+    locationquestion1: {
+      type: String,
+      trim: true,
+    },
+    locationquestion2: {
+      type: String,
+      trim: true,
+    },
+    locationquestion3: {
+      type: String,
+      trim: true,
+    },
+    locationquestion4: {
+      type: String,
+      trim: true,
+    },
+    locationquestion5: {
+      type: String,
+      trim: true,
+    },
+    locationquestion6: {
+      type: String,
+      trim: true,
+    },
+    locationanswer1: {
+      type: String,
+      trim: true,
+    },
+    locationanswer2: {
+      type: String,
+      trim: true,
+    },
+    locationanswer3: {
+      type: String,
+      trim: true,
+    },
+    locationanswer4: {
+      type: String,
+      trim: true,
+    },
+    locationanswer5: {
+      type: String,
+      trim: true,
+    },
+    locationanswer6: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true,

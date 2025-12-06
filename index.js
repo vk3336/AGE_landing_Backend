@@ -123,6 +123,7 @@ app.use(
     allowedHeaders: [
       "Content-Type",
       "Authorization",
+      "Cache-Control",
       process.env.Role_Management_Key || "x-admin-email",
       process.env.API_KEY_NAME || "x-api-key",
     ],
@@ -204,7 +205,22 @@ app.use((req, res, next) => {
   if (req.path.includes("/images/") || req.path.includes("/static/")) {
     res.setHeader("Cache-Control", "public, max-age=3600"); // 1h
   } else if (req.method === "GET") {
-    res.setHeader("Cache-Control", "public, max-age=300"); // 5m
+    // Disable caching for admin/management endpoints
+    if (
+      req.path.includes("/faqa") ||
+      req.path.includes("/admin") ||
+      req.path.includes("/blogs") ||
+      req.path.includes("/aboutus")
+    ) {
+      res.setHeader(
+        "Cache-Control",
+        "no-store, no-cache, must-revalidate, private"
+      );
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+    } else {
+      res.setHeader("Cache-Control", "public, max-age=300"); // 5m
+    }
   }
   next();
 });

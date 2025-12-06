@@ -816,7 +816,6 @@ const getSeoDetailsForAstroProducts = async (req, res) => {
       })
       .populate({
         path: "location",
-        select: "name slug country state city",
         populate: [
           { path: "country", select: "name code slug" },
           { path: "state", select: "name code slug" },
