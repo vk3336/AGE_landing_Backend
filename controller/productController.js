@@ -1055,14 +1055,18 @@ const update = async (req, res) => {
       }
     }
 
-    // Sanitize updateData
-    Object.keys(updateData).forEach(
-      (key) =>
-        (updateData[key] === "" ||
-          updateData[key] === undefined ||
-          updateData[key] === null) &&
-        delete updateData[key]
-    );
+    // Sanitize updateData - but allow empty strings for FAQ fields to clear them
+    Object.keys(updateData).forEach((key) => {
+      const isFAQField =
+        key.startsWith("productquestion") || key.startsWith("productanswer");
+
+      if (updateData[key] === undefined || updateData[key] === null) {
+        delete updateData[key];
+      } else if (updateData[key] === "" && !isFAQField) {
+        delete updateData[key];
+      }
+      // For FAQ fields, keep empty strings to allow clearing them
+    });
 
     const updated = await Product.findByIdAndUpdate(id, updateData, {
       new: true,
